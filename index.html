@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self' https: wss:">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Demon Gacha">
+<meta name="theme-color" content="#12070b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="dg-version" content="20d432c52c48">
+<title>Demon Gacha</title>
+<style>
+@font-face{font-family:"Lilita One";src:url(fonts/lilita-one-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Rubik;src:url(fonts/rubik-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Rubik;src:url(fonts/rubik-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Rubik;src:url(fonts/rubik-latin-700-normal.woff2) format("woff2");font-weight:700;font-display:swap}
+/* VOICE: loud, arcade, a little menacing; a card game you check between attempts
+   IDEA: a booster pack on a crimson counter, the shop floor of a GD fan's collection
+   PICTURE: the foil pack itself, big and floating; cards with drawn horned faces
+   COLOUR and TYPE: wine-black ground, crimson field, GD lime for anything you earn; Lilita One + Rubik
+   LAYOUT: sticky top bar, hero band with pack, panels below; one column under 700px */
+:root{color-scheme:dark;--bg:#12070b;--panel:#1e0c13;--panel2:#28111a;--line:#43202c;--ink:#f8ece8;--mute:#c29ea7;--hot:#ff3b3b;--wine:#6b0f1f;--lime:#8cff3a;--cyan:#3df2ff}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Rubik,system-ui,sans-serif;overflow-x:clip}
+h1,h2,.big,.brand,.lbl,.btn{font-family:"Lilita One",Rubik,sans-serif;font-weight:400}
+h1{font-size:clamp(32px,5vw,48px);line-height:1.05;margin:0 0 8px;text-wrap:balance}
+h2{font-size:24px;line-height:1.1;margin:0 0 10px}
+p{margin:0 0 10px}
+a{color:var(--lime)}
+.band{padding:clamp(24px,4vw,48px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header{position:sticky;top:0;z-index:20;background:#0c0407;border-bottom:1px solid var(--line)}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;max-width:1240px;margin:0 auto;padding:10px max(5vw,16px)}
+.brand{display:flex;align-items:center;gap:8px;font-size:22px;color:var(--ink);text-decoration:none}
+.brand img{width:40px;height:auto}
+nav{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+nav a{color:var(--mute);text-decoration:none;padding:9px 12px;border-radius:10px;font-weight:500}
+@media(min-width:701px) and (max-width:1360px){nav{gap:2px}nav a{padding:8px 8px;font-size:15px}.top{gap:8px 12px}}
+nav a.on,nav a:hover{background:var(--panel2);color:var(--ink)}
+.chip{display:flex;gap:12px;font-size:14px;color:var(--mute);white-space:nowrap}
+.chip b{color:var(--ink);font-size:16px}
+.hero{background:linear-gradient(160deg,var(--wine),#2a0610 70%);border-bottom:1px solid var(--line)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:center}
+.lbl{color:#ffb3b3;font-size:18px;margin:0}
+.big{font-size:clamp(72px,12vw,120px);line-height:.95;margin:0 0 6px}
+.big small{font-size:22px;color:#ffc9c9;margin-left:6px}
+.bar{height:12px;background:#0006;border-radius:99px;overflow:hidden;margin:12px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--hot),#ffb03b);border-radius:99px;transition:width .4s}
+.bar.sm{height:7px;margin:6px 0}.bar.sm i{background:var(--lime)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font-size:19px;min-height:48px;padding:8px 22px;border-radius:12px;border:0;cursor:pointer;color:#1a0306;background:var(--ink)}
+.btn.hot{background:linear-gradient(180deg,#ff6a4a,var(--hot));color:#fff;box-shadow:0 6px 0 #8a0f17}
+.btn.hot:active{transform:translateY(3px);box-shadow:0 3px 0 #8a0f17}
+.btn.lime{background:var(--lime);font-size:16px;min-height:44px;padding:6px 16px}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;transform:none}
+.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.timer{color:#ffd6d6}.timer b{font-variant-numeric:tabular-nums}
+.packart{display:grid;place-items:center}
+.packart svg{width:min(100%,300px);height:auto;filter:drop-shadow(0 24px 30px #000a);animation:float 4s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-10px) rotate(-1.5deg)}}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px}
+.note{color:var(--mute);font-size:14px;margin:8px 0 0}
+.q{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}
+.q:first-of-type{border-top:0}.q>div{flex:1}.q small{color:var(--mute)}
+.done{color:var(--lime);font-weight:700;white-space:nowrap}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:12px 0}
+.days span{text-align:center;padding:8px 2px;border-radius:10px;background:var(--panel2);font-size:13px;color:var(--mute)}
+.days span b{display:block;font-family:"Lilita One";font-size:20px;color:var(--ink)}
+.days span.past{background:#2f4a14;color:#d8ffbf}.days span.now{outline:2px solid var(--lime)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stat b{display:block;font:32px/1.1 "Lilita One",sans-serif}.stat span{color:var(--mute);font-size:14px}
+.card{position:relative;aspect-ratio:3/4;border-radius:12px;border:2px solid var(--rc);background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--rc) 38%,#1a0a10),#0c0407 72%);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:8px}
+.card .df{position:absolute;top:17%;left:7%;width:86%;filter:var(--tint)}
+.card .pos,.card .rr{position:absolute;top:6px;font-size:13px;font-weight:700}
+.card .pos{left:8px}.card .rr{right:8px;color:var(--rc)}
+.card .nm{position:relative;font-family:"Lilita One";font-weight:400;font-size:15px;line-height:1.1;text-align:center;text-shadow:0 2px 4px #000;overflow-wrap:anywhere}
+.card .lt{cursor:help;position:relative;font:700 13px/1 Rubik,sans-serif;padding:3px 8px;border-radius:99px;margin-bottom:5px;color:#fff;background:#0009;border:1px solid #fff4}
+.card .lt.sbe{background:#0b6b78;border-color:#3df2ff}.card .lt.main{background:#c4142b;border-color:#ff8a8a}.card .lt.ext{background:#a8520a;border-color:#ffb067}
+.card.miss{filter:grayscale(1) brightness(.4)}
+.holo::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,#ff00a066 35%,#00ffff66 50%,#ffff0055 65%,transparent 80%);background-size:250% 250%;mix-blend-mode:color-dodge;animation:sheen 3s linear infinite;pointer-events:none}
+@keyframes sheen{from{background-position:120% 0}to{background-position:-120% 0}}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px}
+.cell{display:flex;flex-direction:column;gap:6px}
+.mini{min-height:36px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:500 13px Rubik;cursor:pointer}
+.mini.cta{background:var(--lime);color:#122005;border:0;padding:0 14px;font-weight:700;min-height:36px}.mini.me{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.chip{align-items:center}
+/* 3D: tilt toward the mouse, glare, inspector, case reel */
+.card{user-select:none;-webkit-user-select:none;transition:transform .18s ease-out;transform-style:preserve-3d}
+.card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .2s;background:radial-gradient(circle at var(--gx,50%) var(--gy,30%),#ffffff55,transparent 55%);z-index:1}
+.card.tilt::before{opacity:1}
+.insp{position:fixed;inset:0;z-index:70;background:#070204f2;display:grid;place-items:center;padding:16px}
+.insp[hidden]{display:none}
+.stage{perspective:1300px;display:grid;place-items:center;width:min(92vw,560px);height:min(68vh,560px);touch-action:none;cursor:grab}
+.stage:active{cursor:grabbing}
+.icard{position:relative;width:min(66vw,330px);aspect-ratio:3/4;transform-style:preserve-3d}
+.icard.anim{transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.iface{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;box-shadow:0 30px 60px #000c}
+.iback{transform:rotateY(180deg)}
+.ifront .card{height:100%;border-width:3px;border-radius:18px;padding:14px;transition:none}
+.ifront .card .nm{font-size:clamp(20px,5vw,28px)}.ifront .card .pos,.ifront .card .rr{font-size:16px;top:12px}.ifront .card .pos{left:14px}.ifront .card .rr{right:14px}.ifront .card .lt{font-size:15px;padding:4px 10px}
+.glare{position:absolute;inset:0;border-radius:18px;pointer-events:none;mix-blend-mode:overlay;z-index:2}
+.iback{border:3px solid var(--rc,#5a1a28);background:repeating-linear-gradient(45deg,#3a0a15 0 14px,#2a0710 14px 28px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center}
+.iback img{width:48%}.iback h3{font:26px/1.1 "Lilita One",sans-serif;margin:0;overflow-wrap:anywhere}.iback dl{display:grid;grid-template-columns:auto auto;gap:4px 12px;margin:0;font-size:15px;text-align:left}.iback dt{color:var(--mute)}.iback dd{margin:0;font-weight:700}
+.reel{position:relative;overflow:hidden;height:212px;border-radius:14px;border:2px solid var(--line);background:#0c0407;margin:18px 0}
+.strip{position:absolute;left:0;top:16px;display:flex;gap:10px;padding-left:10px;will-change:transform}
+.strip .card{width:136px;flex:none}
+.reel::before,.reel::after{content:"";position:absolute;top:0;bottom:0;width:18%;z-index:2;pointer-events:none}
+.reel::before{left:0;background:linear-gradient(90deg,#0c0407,transparent)}.reel::after{right:0;background:linear-gradient(-90deg,#0c0407,transparent)}
+.marker{position:absolute;left:50%;top:0;bottom:0;width:4px;margin-left:-2px;background:var(--lime);box-shadow:0 0 14px var(--lime);z-index:3}
+.marker::before,.marker::after{content:"";position:absolute;left:-8px;border:10px solid transparent}.marker::before{top:0;border-top-color:var(--lime)}.marker::after{bottom:0;border-bottom-color:var(--lime)}
+.strip .card.win{box-shadow:0 0 30px 6px var(--rc);transform:scale(1.06)}
+@media(prefers-reduced-motion:reduce){.card{transition:none}.icard.anim{transition:none}}
+.atag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;font:700 12px/1.4 Rubik,sans-serif;background:#3da5ff;color:#03131f;vertical-align:middle;white-space:nowrap}
+.otag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;font:700 13px/1.4 Rubik,sans-serif;background:linear-gradient(180deg,#ffe08a,#e0a100);color:#2a1600;vertical-align:middle;white-space:nowrap}
+/* market */
+.price{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:14px}.price b{font:18px/1 'Lilita One',sans-serif;color:var(--lime);white-space:nowrap}.price small{color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mkHead{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;margin:24px 0 8px}
+/* admin */
+.actbar{background:#0b6b78;color:#fff;text-align:center;padding:8px 16px;display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:8px;font-weight:400;margin:0}.chk input{width:20px;height:20px;min-height:0}
+label{display:block;font-weight:700;margin:12px 0 6px}#un{width:100%}
+.mini:disabled{opacity:.45;cursor:not-allowed}
+.tools{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+input,select,textarea{font:16px Rubik;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+textarea{width:100%;min-height:120px;font-size:13px;font-family:ui-monospace,monospace}
+details{margin-top:24px}summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.fig{position:relative;width:100%;max-width:100%;aspect-ratio:3/1;border-radius:14px;overflow:hidden;border:2px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none}
+@media(max-width:600px){.fig{aspect-ratio:2/1}.band{padding-left:12px;padding-right:12px}.panel{padding:16px 14px}}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer;touch-action:none}
+.hl{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:stretch;margin:12px 0}
+.hl button{min-height:96px;border-radius:14px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);font:20px/1.1 "Lilita One",sans-serif;cursor:pointer;padding:10px}
+.hl button small{display:block;font:14px Rubik;color:var(--mute);margin-top:6px}
+.hl button.ok{border-color:var(--lime);background:#24380f}.hl button.bad{border-color:var(--hot);background:#3d0b10}
+.hl .vs{align-self:center;font-family:"Lilita One";color:var(--mute)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--mute);font-weight:500;font-size:14px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.me td{background:#24380f}
+.ov{position:fixed;inset:0;z-index:50;background:#070204e8;display:grid;place-items:center;padding:16px;overflow:auto}
+.ov[hidden]{display:none}
+.ov-in{width:min(100%,900px);text-align:center}
+.rgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:18px 0}
+.fc{perspective:900px;cursor:pointer}
+.fc-in{position:relative;aspect-ratio:3/4;transition:transform .55s;transform-style:preserve-3d}
+.fc.on .fc-in{transform:rotateY(180deg)}
+.fc .back,.fc .front{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fc .front{transform:rotateY(180deg)}
+.fc .front .card{height:100%}
+.back{border-radius:12px;border:2px solid #5a1a28;background:repeating-linear-gradient(45deg,#3a0a15 0 10px,#2a0710 10px 20px);display:grid;place-items:center}
+.back img{width:64%}
+.back.glow{box-shadow:0 0 24px 4px var(--rc);border-color:var(--rc)}
+.tag{display:inline-block;margin-top:8px;font-size:13px;font-weight:700;color:var(--mute)}
+.tag.new{color:var(--lime)}
+#toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:60;display:grid;gap:8px;width:min(92vw,420px)}
+.toast{background:var(--lime);color:#122005;font-weight:700;padding:12px 16px;border-radius:12px;box-shadow:0 8px 24px #000a;text-align:center}
+.sync{font-size:13px;color:var(--mute)}
+@media(max-width:700px){.hero .wrap{grid-template-columns:1fr}.packart{order:-1}.packart svg{width:190px}.rgrid{grid-template-columns:repeat(3,minmax(0,1fr))}.chip{width:100%}}
+@media(prefers-reduced-motion:reduce){.packart svg,.holo::after{animation:none}.fc-in{transition:none}}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal}.stack td:empty{display:none}}
+
+/* big-pull banner: Legendary, Mythic and Honorable Mention */
+.pullb{position:fixed;inset:0;z-index:75;display:grid;place-items:center;overflow:hidden;cursor:pointer;background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--pc) 38%,#14060b),#070204 72%)}
+.pullb[hidden]{display:none}
+.rays{position:absolute;left:50%;top:42%;width:240vmax;height:240vmax;margin:-120vmax 0 0 -120vmax;background:repeating-conic-gradient(color-mix(in srgb,var(--pc) 42%,transparent) 0 7deg,transparent 7deg 20deg);-webkit-mask:radial-gradient(circle,#000 0,#000 12%,transparent 42%);mask:radial-gradient(circle,#000 0,#000 12%,transparent 42%);animation:rays 20s linear infinite}
+@keyframes rays{to{transform:rotate(360deg)}}
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;top:-24px;width:9px;height:15px;border-radius:2px;background:var(--c);animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(760deg)}}
+.pb-in{position:relative;text-align:center;padding:24px 16px;max-width:100%}
+.pb-in h1{font-size:clamp(34px,9vw,68px);line-height:1;margin:0 0 22px;color:#fff;text-shadow:0 0 26px var(--pc),0 0 6px var(--pc),0 4px 0 #000;text-transform:uppercase}
+.pb-card{width:min(64vw,270px);margin:0 auto;animation:pbpop .75s cubic-bezier(.2,1.5,.35,1) both;filter:drop-shadow(0 0 34px var(--pc))}
+.pb-card .card .nm{font-size:22px}.pb-card .card .pos,.pb-card .card .rr{font-size:15px;top:10px}.pb-card .card .lt{font-size:14px}
+@keyframes pbpop{from{transform:scale(.25) rotate(-14deg);opacity:0}to{transform:none;opacity:1}}
+.pb-sub{font:22px/1.2 "Lilita One",sans-serif;color:var(--pc);margin:18px 0 6px}
+.pb-tap{color:#ffffffaa;font-size:15px;margin:0}
+@media(prefers-reduced-motion:reduce){.rays,.pb-card,.confetti i{animation:none}}
+/* phones and narrow windows: compact header that scrolls away, tabs in one swipeable row */
+.tip-touch{display:none}
+@media (hover:none){.tip-mouse{display:none}.tip-touch{display:inline}}
+@media (max-width:700px){
+  header{position:static}
+  .top{gap:10px;padding:10px 14px}
+  .brand{font-size:20px}.brand img{width:32px}
+  .chip{width:auto;flex:1 1 auto;justify-content:flex-end;flex-wrap:wrap;gap:8px 12px}
+  nav{order:3;flex:1 0 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px 2px}
+  nav::-webkit-scrollbar{display:none}
+  nav a{flex:none;padding:8px 14px;font-size:15px;background:var(--panel)}
+  nav a.on{background:var(--ink);color:#1a0306}
+}
+/* desktop: login, setup and loading screens */
+.gate{position:fixed;inset:0;z-index:90;background:radial-gradient(circle at 50% 20%,#5a0c1c,var(--bg) 60%);display:grid;place-items:center;padding:20px;overflow:auto}
+.gate-in{width:min(100%,420px);text-align:left}
+.gate-in h1{text-align:center}.gate-logo{display:block;width:120px;margin:0 auto 8px}
+.tabs{display:flex;gap:6px;margin:12px 0 4px;background:var(--panel2);padding:4px;border-radius:12px}
+.tab{flex:1;min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--mute);font:500 15px Rubik,sans-serif;cursor:pointer}.tab.on{background:var(--ink);color:#1a0306}
+.gate input,.gate textarea{width:100%}
+.boot{font:28px "Lilita One",sans-serif;color:var(--mute)}
+.plist{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.plist button{display:flex;justify-content:space-between;width:100%;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:15px Rubik,sans-serif;cursor:pointer;text-align:left}
+.plist button.on,.plist button:hover{background:var(--panel2)}.plist small{color:var(--mute)}
+
+/* APEX: the one card above Mythic (AREDL #1), with a turning rainbow border */
+@property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
+.card.apex{border-color:transparent;background:radial-gradient(circle at 50% 38%,#5c1450,#0c0407 72%) padding-box,conic-gradient(from var(--ang),#ff3355,#ffc23d,#8cff3a,#3df2ff,#3da5ff,#b45cff,#ff3355) border-box;animation:apexspin 3.5s linear infinite}
+.card.apex .rr{background:linear-gradient(90deg,#ff6b6b,#ffd86b,#8cff3a,#6bf2ff,#d08bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card.apex.miss{animation:none}
+@keyframes apexspin{to{--ang:360deg}}
+.pullb.apx .pb-in h1{background:linear-gradient(90deg,#ff3355,#ffc23d,#8cff3a,#3df2ff,#b45cff,#ff3355);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px #ff4fd8) drop-shadow(0 4px 0 #000);animation:apexslide 2.5s linear infinite}
+@keyframes apexslide{to{background-position:200% 0}}
+/* IME: the one-card tier for IT MEANS EVERYTHING, with a gold shimmer */
+.card.ime{border-color:transparent;background:radial-gradient(circle at 50% 38%,#5a4210,#0c0407 72%) padding-box,conic-gradient(from var(--ang),#fff3c4,#e0a100,#ffd76a,#8a5a00,#fff3c4,#ffd76a,#fff3c4) border-box;animation:apexspin 4s linear infinite;box-shadow:0 0 18px #ffd76a55}
+.card.ime::before{content:"";position:absolute;inset:0;opacity:1;background:linear-gradient(115deg,transparent 30%,#fff6d066 45%,transparent 60%);background-size:260% 100%;animation:imeshine 3.2s ease-in-out infinite;pointer-events:none}
+@keyframes imeshine{0%{background-position:130% 0}100%{background-position:-130% 0}}
+.card.ime .rr{background:linear-gradient(90deg,#fff3c4,#ffd76a,#e0a100);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card.ime.miss{animation:none;box-shadow:none}.card.ime.miss::before{display:none}
+.card .lt.top5{background:linear-gradient(180deg,#ffe08a,#c98a00);color:#2a1600;border-color:#fff3c4}
+.pullb.imb .pb-in h1{background:linear-gradient(90deg,#fff3c4,#ffd76a,#e0a100,#ffd76a,#fff3c4);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px #ffd76a) drop-shadow(0 4px 0 #000);animation:apexslide 2.5s linear infinite}
+.fd>i.im{background:conic-gradient(#fff3c4,#ffd76a,#e0a100,#fff3c4);box-shadow:0 0 10px #ffd76a}
+@media(prefers-reduced-motion:reduce){.card.ime,.card.ime::before,.pullb.imb .pb-in h1{animation:none}}
+/* trades */
+.nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:5px;padding:0 5px;border-radius:99px;background:var(--hot);color:#fff;font:700 11px/1 Rubik,sans-serif;vertical-align:2px}
+.nbadge[hidden]{display:none}
+.tcols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+@media(max-width:700px){.tcols{grid-template-columns:1fr}}
+.th3{font:18px "Lilita One",sans-serif;margin:8px 0 6px}
+.tsel{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;padding:6px;border:1px dashed var(--line);border-radius:10px;margin-bottom:8px;align-items:center}
+.tpick{display:flex;flex-wrap:wrap;gap:6px;max-height:260px;overflow:auto;margin-top:8px;padding-right:2px}
+.tchip{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;max-width:100%;padding:5px 9px 5px 11px;border:1px solid var(--line);border-left:4px solid var(--rc);border-radius:9px;background:var(--panel2);color:var(--ink);text-align:left;cursor:pointer;overflow:hidden}
+.tchip b{font:600 13px/1.2 Rubik,sans-serif;overflow-wrap:anywhere}.tchip small{font-size:11px;color:var(--rc)}
+.tchip:hover:not(:disabled),.tchip:focus-visible{border-color:var(--rc)}
+.tchip:disabled{cursor:default}.tchip.dim{opacity:.45}
+.tsel .tchip::before{content:"×";position:absolute;right:6px;top:3px;color:var(--mute);font-size:13px}.tsel .tchip{padding-right:20px}
+.tshl{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px}.tshl input{width:110px}
+.trow{border-top:1px solid var(--line);padding:12px 0}.trow.tin{border-left:3px solid var(--lime);padding-left:10px}
+.thead{margin:0 0 8px}.thead small{color:var(--mute)}
+.tside{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.tlab{width:62px;flex:none;font-size:13px;color:var(--mute)}
+.tsh{display:inline-block;padding:4px 10px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+.tst{display:inline-block;padding:1px 8px;border-radius:99px;font:700 12px/1.5 Rubik,sans-serif;background:var(--panel2);color:var(--mute)}
+.tst.accepted{background:var(--lime);color:#132200}
+/* mini window (desktop): a small always-on-top view */
+body.mini>*:not(#mini):not(.gate):not(#toasts){display:none!important}
+body.mini{overflow:hidden}
+#mini{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+#mini[hidden]{display:none}
+.mbar{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 10px;background:var(--panel);border-bottom:1px solid var(--line);-webkit-app-region:drag;user-select:none}
+.mbar img{width:22px;height:22px}.mbar b{font:16px "Lilita One",sans-serif;flex:1}
+#mShards{font-size:12px;color:var(--mute);white-space:nowrap}
+.mbtn{-webkit-app-region:no-drag;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:var(--ink);cursor:pointer}
+.mbtn:hover,.mbtn:focus-visible{background:var(--panel2)}
+.mbody{flex:1;overflow:auto;padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.mpk{margin:0;font-size:14px;color:var(--mute)}.mpk #mPacks{font:34px/1 "Lilita One",sans-serif;color:var(--ink);margin-right:2px}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mrow .btn{font-size:16px;min-height:42px;padding:6px 10px}
+#mAuto .chk{font-size:13px;margin-right:10px}#mAuto .btn{width:100%}
+.mnote,.mlab{margin:0;font-size:12px;color:var(--mute)}
+.mgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:4px}
+.mc{position:relative;aspect-ratio:3/4;border:2px solid var(--rc);border-radius:8px;background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--rc) 38%,#1a0a10),#0c0407 72%);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px}
+.mc img{width:72%}.mc b{font:9px/1.1 "Lilita One",sans-serif;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.mc.new::before{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--lime)}
+.mc.full{opacity:.45}
+.mbest{margin:2px 0 0;font:15px "Lilita One",sans-serif}
+.mflash{border:2px solid var(--rc);border-radius:12px;padding:8px 10px;background:color-mix(in srgb,var(--rc) 22%,#12070b);box-shadow:0 0 18px var(--rc);text-align:center;animation:pbpop .5s cubic-bezier(.2,1.5,.35,1) both}
+.mflash b{display:block;font:20px "Lilita One",sans-serif;color:var(--rc);text-transform:uppercase}.mflash span{font-size:13px}
+.mfeed{margin:auto 0 0;font-size:12px;color:var(--mute);line-height:1.4}
+.btn.sm{font-size:15px;min-height:38px;padding:4px 14px}
+#autoBox .chk{margin-right:12px}
+/* Home rows and the community feed */
+.hrow{display:grid;grid-auto-flow:column;grid-auto-columns:128px;gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+.hrow .cell{scroll-snap-align:start}
+#feedList{max-height:430px;overflow:auto}
+.fd{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);line-height:1.35}
+.fd>i{flex:none;width:12px;height:12px;margin-top:5px;border-radius:50%;background:var(--rc);box-shadow:0 0 8px var(--rc)}
+.fd>i.ap{background:conic-gradient(#ff3355,#ffc23d,#8cff3a,#3df2ff,#b45cff,#ff3355);box-shadow:0 0 10px #ff4fd8}
+.fd small{display:block;color:var(--mute);font-size:13px}
+.fn{all:unset;font-weight:700;cursor:pointer}.fn:hover,.fn:focus-visible{text-decoration:underline}
+.hb{display:inline-block;padding:0 7px;border-radius:99px;font:700 12px/1.6 Rubik,sans-serif;background:linear-gradient(90deg,#ff00a0,#00e5ff);color:#fff;vertical-align:1px}
+.hb.off{background:var(--panel2);color:var(--mute)}
+.code{font-family:ui-monospace,Consolas,monospace;letter-spacing:1px}
+.cf{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:10px}
+.cf label{display:flex;flex-direction:column;gap:4px;margin:0;font-size:13px}.cf input{width:100%}
+.btn.nd{background:linear-gradient(180deg,#7ff7ff,#1fb8cc);color:#03181c;box-shadow:0 5px 0 #0b6b78}.btn.nd:disabled{box-shadow:none}
+.btn.lime.nd{box-shadow:none}
+#codeIn::placeholder,#cCode::placeholder,#linv::placeholder{text-transform:none}
+.col{display:grid;gap:18px;align-content:start}
+.inv{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 14px;margin:6px 0 4px;border:1px dashed var(--line);border-radius:12px;background:var(--panel2)}
+.inv .code{font-size:24px;font-weight:700;color:var(--ink)}
+@media(max-width:600px){.hrow{grid-auto-columns:120px;gap:10px}.hrow .card .pos,.hrow .card .rr{font-size:11.5px}.hrow .card .pos{left:6px}.hrow .card .rr{right:6px}#feedList{max-height:none}}
+@media(prefers-reduced-motion:reduce){.card.apex,.pullb.apx .pb-in h1{animation:none}}
+
+html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-text-size-adjust:100%}body{overscroll-behavior:none}
+</style>
+</head>
+<body>
+<div id="mini" hidden>
+  <div class="mbar"><img src="face.png" alt=""><b>Demon Gacha</b><span id="mShards"></span>
+    <button type="button" class="mbtn" data-act="miniFull" title="Back to the full window" aria-label="Back to the full window"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 6V2h4M14 10v4h-4M2 2l5 5M14 14l-5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    <button type="button" class="mbtn" data-act="miniClose" title="Close the mini window" aria-label="Close the mini window"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button></div>
+  <div class="mbody">
+    <p class="mpk"><span id="mPacks">0</span> packs <small>· <span id="mNd">0</span> No-Dupe</small></p>
+    <div class="bar sm"><i id="mBar"></i></div><p class="mnote" id="mTime"></p>
+    <div class="mrow"><button class="btn hot" data-act="miniOpen" id="mOpen">Open pack</button><button class="btn nd" data-act="miniNd" id="mNdBtn">No-Dupe</button></div>
+    <div id="mAuto"></div>
+    <div id="mFlash" class="mflash" hidden></div>
+    <div id="mLast"></div>
+    <p id="mFeed" class="mfeed"></p>
+  </div>
+</div>
+<div id="boot" class="gate"><p class="boot">Loading…</p></div>
+<div id="setup" class="gate" hidden><div class="gate-in panel">
+  <h1>Connect to your server</h1>
+  <p>Paste your Supabase <b>Project URL</b> and <b>anon public key</b>. You'll find both in Supabase under Project Settings, then API. You only do this once.</p>
+  <form id="setupForm"><label for="su">Project URL</label><input id="su" placeholder="https://xxxx.supabase.co" autocomplete="off"><label for="sk">Anon public key</label><textarea id="sk" spellcheck="false" style="min-height:90px"></textarea>
+  <p class="note" id="setupMsg" aria-live="polite"></p><button class="btn hot" type="submit" style="width:100%">Connect</button></form>
+</div></div>
+<div id="login" class="gate" hidden><div class="gate-in panel">
+  <img src="face.png" alt="" class="gate-logo"><h1>Demon Gacha</h1>
+  <div class="tabs" role="tablist"><button type="button" class="tab on" data-mode="in">Log in</button><button type="button" class="tab" data-mode="up">Create account</button></div>
+  <form id="loginForm"><label for="lu">Username</label><input id="lu" autocomplete="username" maxlength="16" spellcheck="false">
+  <label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" maxlength="72">
+  <div id="lp2wrap" hidden><label for="lp2">Password again</label><input id="lp2" type="password" autocomplete="new-password" maxlength="72">
+  <label for="linv">Friend's invite code <small style="font-weight:400;color:var(--mute)">(optional, gives you 5 packs)</small></label><input id="linv" maxlength="24" autocomplete="off" spellcheck="false" placeholder="e.g. HWAO-7K2P" style="text-transform:uppercase"></div>
+  <p class="note" id="loginMsg" aria-live="polite"></p><button class="btn hot" type="submit" id="loginBtn" style="width:100%">Log in</button></form>
+  <p class="note">Passwords are stored scrambled on the server, so nobody can read yours. If you forget it, ask the owner to reset it.</p>
+</div></div>
+
+<header><div class="top">
+  <a class="brand" href="#home"><img src="face.png" alt="">Demon Gacha</a>
+  <nav><a href="#home">Home</a><a href="#earn">Earn packs</a><a href="#collection">Collection</a><a href="#market">Market</a><a href="#trades">Trades<span class="nbadge" id="tBadge" hidden></span></a><a href="#leaderboard">Leaderboard</a><a href="#admin" id="adminLink" hidden>Admin</a></nav>
+  <div class="chip"><button class="mini cta" id="acct" data-act="acct" hidden>Create account</button><span><b id="cp">0</b> packs</span><span><b id="cs">0</b> shards</span></div>
+</div></header>
+
+<main>
+<section id="v-home" class="view">
+  <div class="hero band"><div class="wrap">
+    <div>
+      <p class="lbl">Packs ready</p>
+      <p class="big"><span id="hp">0</span><small>/ 10 from the timer</small></p>
+      <p>One pack every 10 minutes, up to 10 stored. Packs you earn from quests, streaks and games stack past the cap.</p>
+      <div class="bar"><i id="hbar"></i></div>
+      <div class="row"><button class="btn hot" data-act="open" id="openBtn">Open pack</button><span class="timer" id="hn"></span></div>
+      <div class="row" style="margin-top:10px"><button class="btn nd" data-act="openNd" id="ndBtn">Open No-Dupe pack (0)</button><span class="note" id="ndInfo" style="margin:0"></span></div>
+      <div class="row" id="autoBox" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:12px"><label class="chk"><input type="checkbox" id="spinToggle"> Case-opening spin</label><label class="chk"><input type="checkbox" id="sndToggle"> Sound</label><span class="note" style="margin:0"><span class="tip-mouse">Double-click</span><span class="tip-touch">Double-tap</span> any card to inspect it.</span></div>
+    </div>
+    <div class="packart"><svg viewBox="0 0 220 300" aria-label="A demon card pack">
+      <defs><linearGradient id="foil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5a4a"/><stop offset=".45" stop-color="#8a0f22"/><stop offset=".55" stop-color="#b3203a"/><stop offset="1" stop-color="#3a0610"/></linearGradient></defs>
+      <path d="M10 18 l10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 V282 l-10 10-10-10-10 10-10-10-10 10-10-10-10 10-10-10-10 10-10-10-10 10-10-10-10 10-10-10-10 10-10-10-10 10-10-10-10 10-10-10Z" fill="url(#foil)"/>
+      <rect x="26" y="40" width="168" height="220" rx="12" fill="#1a0408" stroke="#ffb3b3" stroke-opacity=".4" stroke-width="2"/>
+      <image href="face.png" x="38" y="50" width="144" height="112"/>
+      <text x="110" y="190" text-anchor="middle" font-family="Lilita One" font-size="34" fill="#fff">DEMON</text>
+      <text x="110" y="220" text-anchor="middle" font-family="Lilita One" font-size="22" fill="#ff8a8a">PACK</text>
+      <text x="110" y="246" text-anchor="middle" font-family="Rubik" font-weight="700" font-size="12" letter-spacing="2" fill="#8cff3a">5 CARDS</text>
+    </svg></div>
+  </div></div>
+  <div class="band"><div class="wrap grid2">
+    <div class="panel" id="streakBox"></div>
+    <div class="panel"><h2>Today's quests</h2><div id="qList"></div></div>
+  </div></div>
+  <div class="band" style="padding-top:0"><div class="wrap"><div class="stats" id="stats"></div>
+    <div class="panel" id="rareBox" style="margin-top:18px"></div>
+    <div class="panel" id="recentBox" style="margin-top:18px"></div>
+    <div class="panel" id="topBox" style="margin-top:18px"></div>
+    <div class="grid2" style="margin-top:18px;align-items:start">
+      <div class="panel"><h2>Community rare pulls</h2><p class="note" style="margin-top:0">Every Legendary-or-better card anyone pulls, newest first.</p><div id="feedList"></div></div>
+      <div class="col"><div class="panel" id="codeBox"><h2>Redeem a code</h2><p class="note" style="margin-top:0">Codes give free packs or shards, and each works once per player. A friend's invite code works here too in your first 3 days.</p>
+        <form id="codeForm" class="row" autocomplete="off"><input id="codeIn" maxlength="24" placeholder="Type a code" aria-label="Code" autocapitalize="characters" spellcheck="false" style="flex:1;min-width:0;text-transform:uppercase"><button class="btn lime" id="codeBtn">Redeem</button></form>
+        <p class="note" id="codeMsg" aria-live="polite"></p></div>
+      <div class="panel" id="inviteBox"></div></div>
+    </div>
+    <div class="panel" id="luckBox" style="margin-top:18px"></div><p class="sync" id="sync">Saved on the server</p></div></div>
+</section>
+
+<section id="v-earn" class="view" hidden>
+  <div class="band"><div class="wrap">
+    <h1>Earn more packs</h1>
+    <p id="today" class="note" style="margin-bottom:18px"></p>
+    <div class="panel" style="margin-bottom:18px">
+      <h2>Practice Run</h2>
+      <p>Hold or tap to jump, just like the cube. Survive 15s for 1 pack, 30s for 2, 60s for 3. Up to 6 packs a day.</p>
+      <div class="fig"><canvas id="run" aria-label="Jumping mini-game"></canvas></div>
+      <p class="note" id="runInfo"></p>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>Harder or Easier</h2><p>Which demon sits higher on the list? Every 5 in a row is a pack, up to 5 a day.</p><div id="hl"></div></div>
+      <div class="panel"><h2>Shard shop</h2><div id="shop"></div></div>
+    </div>
+    <div class="panel" style="margin-top:18px"><h2>Milestones</h2><div id="ms"></div></div>
+  </div></div>
+</section>
+
+<section id="v-collection" class="view" hidden>
+  <div class="band"><div class="wrap">
+    <h1>Collection</h1>
+    <p id="colHead"></p>
+    <div class="bar"><i id="colBar"></i></div>
+    <div class="tools">
+      <input id="fq" type="search" placeholder="Search demons" aria-label="Search demons">
+      <select id="fr" aria-label="Rarity"><option value="all">All rarities</option><option value="7">IME</option><option value="6">APEX</option><option value="5">Honorable Mention</option><option value="4">Mythic</option><option value="3">Legendary</option><option value="2">Epic</option><option value="1">Rare</option><option value="0">Common</option></select>
+      <select id="fl" aria-label="List section"><option value="all">Any section</option><option value="main">Main (#1–75)</option><option value="ext">Extended (#76–150)</option><option value="leg">Legacy (#151+)</option><option value="sbe">SBE (Should Be Extreme)</option></select>
+      <select id="fs" aria-label="Show"><option value="all">Owned and missing</option><option value="own">Owned</option><option value="miss">Missing</option><option value="holo">Holo</option></select>
+    </div>
+    <div class="cgrid" id="grid"></div>
+    <div class="row" style="justify-content:center;margin-top:16px"><button class="btn ghost" data-act="more" id="moreBtn">Show more</button></div>
+    <details><summary>Pack history</summary><p class="note">The last 100 packs and crafts, newest first (showing 30).</p><div id="hist"></div></details>
+  </div></div>
+</section>
+
+<section id="v-market" class="view" hidden>
+  <div class="band"><div class="wrap">
+    <h1>Market</h1>
+    <p>Buy other players' cards with shards. To sell one of yours, open your Collection and press <b>Sell</b> on it.</p>
+    <p class="note" id="mkNote"></p>
+    <div class="mkHead"><h2 style="margin:0">Your listings</h2><span class="note" id="mkMineCount"></span></div>
+    <div class="cgrid" id="mkMine"></div>
+    <div class="mkHead"><h2 style="margin:0">For sale</h2><span class="note" id="mkCount"></span></div>
+    <div class="tools">
+      <input id="mq" type="search" placeholder="Search cards or sellers" aria-label="Search the market">
+      <select id="mr" aria-label="Rarity"><option value="all">All rarities</option><option value="7">IME</option><option value="6">APEX</option><option value="5">Honorable Mention</option><option value="4">Mythic</option><option value="3">Legendary</option><option value="2">Epic</option><option value="1">Rare</option><option value="0">Common</option></select>
+      <select id="mo" aria-label="Sort"><option value="new">Newest first</option><option value="cheap">Cheapest first</option><option value="rare">Rarest first</option></select>
+    </div>
+    <div class="cgrid" id="mkAll"></div>
+  </div></div>
+</section>
+
+<section id="v-trades" class="view" hidden>
+  <div class="band"><div class="wrap">
+    <h1>Trades</h1>
+    <p>Swap cards, and shards if you like, with other players. Nothing moves until they accept, and you can't get a card you already have (unless it's a holo upgrade).</p>
+    <div class="grid2" style="align-items:start">
+      <div class="panel"><h2>New trade</h2>
+        <label for="tWho">Trade with</label>
+        <div class="row"><input id="tWho" list="tPlayers" maxlength="16" placeholder="Their username" autocomplete="off" spellcheck="false" style="flex:1;min-width:0"><button class="btn ghost sm" data-act="tLoad">Load their cards</button></div>
+        <datalist id="tPlayers"></datalist>
+        <p class="note" id="tMsg" aria-live="polite"></p>
+        <div id="tBuilder" hidden>
+          <div class="tcols">
+            <div><h3 class="th3">You give</h3><div class="tsel" id="tGiveSel"></div>
+              <input id="tGiveQ" type="search" placeholder="Search your cards" aria-label="Search your cards" style="width:100%">
+              <div class="tpick" id="tGivePick"></div>
+              <label class="tshl">Shards you give <input id="tGiveSh" type="number" min="0" max="100000" value="0"></label></div>
+            <div><h3 class="th3">You get from <span id="tWhoName"></span></h3><div class="tsel" id="tWantSel"></div>
+              <input id="tWantQ" type="search" placeholder="Search their cards" aria-label="Search their cards" style="width:100%">
+              <div class="tpick" id="tWantPick"></div>
+              <label class="tshl">Shards you get <input id="tWantSh" type="number" min="0" max="100000" value="0"></label></div>
+          </div>
+          <button class="btn lime" data-act="tSend" id="tSend" style="margin-top:12px">Send trade offer</button>
+        </div></div>
+      <div class="panel"><h2>Offers</h2><div id="tList"></div></div>
+    </div>
+  </div></div>
+</section>
+
+<section id="v-leaderboard" class="view" hidden>
+  <div class="band"><div class="wrap">
+    <h1>Leaderboard</h1>
+    <p class="note" id="lbNote">Ranked by different demons collected.</p>
+    <table class="stack"><thead><tr><th class="n">#</th><th>Player</th><th class="n">Demons</th><th class="n">Holos</th><th class="n">Packs opened</th><th class="n">Luck</th></tr></thead><tbody id="lb"></tbody></table>
+  </div></div>
+</section>
+</main>
+
+<footer class="band note" style="border-top:1px solid var(--line)">Unofficial fan-made game. Not affiliated with RobTop Games, Geometry Dash, AREDL or Valve. The Extreme Demon face belongs to RobTop Games; the case-opening sound is from Counter-Strike by Valve.</footer>
+
+<section id="v-admin" class="view" hidden><div class="band"><div class="wrap">
+  <h1>Admin panel</h1>
+  <p class="note" style="margin-bottom:18px">Only the owner and admins can see this tab. Every change here runs on the server.</p>
+  <div class="grid2">
+    <div class="panel"><h2>Players</h2>
+      <input id="pq" type="search" placeholder="Search players" aria-label="Search players" style="width:100%;margin-bottom:10px">
+      <div class="plist" id="plist"></div></div>
+    <div class="panel"><h2>Edit <span id="aWho">a player</span></h2>
+      <p class="note" id="aInfo">Pick a player on the left.</p>
+      <div class="row"><input id="aN" type="number" min="1" max="9999" value="10" style="width:110px" aria-label="Amount"><button class="btn ghost" data-act="aPacks">Give packs</button><button class="btn ghost" data-act="aShards">Give shards</button><button class="btn ghost" data-act="aNd">Give No-Dupe packs</button></div>
+      <label for="aCard">Card</label><input id="aCard" list="allNames" placeholder="Start typing a level name" autocomplete="off" style="width:100%"><datalist id="allNames"></datalist>
+      <div class="row" style="margin-top:10px"><label class="chk"><input type="checkbox" id="aHolo"> Holo</label><button class="btn ghost" data-act="aGive">Give card</button><button class="btn ghost" data-act="aTake">Remove card</button></div>
+      <label for="aPw">New password</label>
+      <div class="row"><input id="aPw" type="text" autocomplete="off" placeholder="6 or more characters" style="flex:1"><button class="btn ghost" data-act="aSetPw">Set password</button></div>
+      <div class="row" style="margin-top:16px"><button class="btn ghost" data-act="aClr" id="aClrBtn">Clear username</button><button class="btn ghost" data-act="aReset" id="aResetBtn">Reset this account</button></div>
+      <p class="note" id="aMsg" aria-live="polite"></p></div>
+    <div class="panel" id="ownerBox" hidden><h2>Admins</h2>
+      <p class="note">Admins get this Admin tab: they can give packs, cards and shards, reset accounts, set passwords and make codes. Only you, the owner, can add or remove admins.</p>
+      <label for="admName">Username</label>
+      <div class="row"><input id="admName" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Their username" style="flex:1;min-width:0"><button class="btn lime" data-act="aMkAdmin">Give admin</button></div>
+      <p class="note" id="admMsg" aria-live="polite"></p>
+      <label>Current admins</label><div id="admList"></div></div>
+    <div class="panel"><h2>Name filter</h2>
+      <p class="note">Usernames with these words are refused, even with spaces, _ or -, repeated letters, or number swaps like 1 for i. Only admins can see or change this list.</p>
+      <details><summary>Edit word lists</summary>
+        <label for="fAny">Blocked anywhere in a name</label><textarea id="fAny" spellcheck="false"></textarea>
+        <label for="fWord">Blocked only as a whole word (short words that hide inside normal words)</label><textarea id="fWord" spellcheck="false"></textarea>
+        <p class="note">One word per line or separated by commas.</p>
+        <div class="row" style="margin-top:10px"><button class="btn lime" data-act="aFilter">Save filter</button></div>
+      </details>
+      <p class="note" id="fMsg" aria-live="polite"></p>
+      <label>Names that break the rules</label><div id="fBad"></div></div>
+    <div class="panel"><h2>Redeem codes</h2>
+      <p class="note">Make a code that gives packs or shards. Players type it on the Home tab, and each player can use it once.</p>
+      <label for="cCode">Code (leave blank for a random one)</label><input id="cCode" maxlength="24" autocomplete="off" spellcheck="false" placeholder="e.g. WELCOME" style="width:100%;text-transform:uppercase">
+      <div class="cf"><label>Packs<input id="cPacks" type="number" min="0" max="1000" value="5"></label><label>Shards<input id="cShards" type="number" min="0" max="100000" value="0"></label><label>Max uses<input id="cMax" type="number" min="1" placeholder="No limit"></label><label>Expires in days<input id="cDays" type="number" min="1" placeholder="Never"></label></div>
+      <div class="row" style="margin-top:10px"><button class="btn lime" data-act="aMkCode">Make code</button></div>
+      <p class="note" id="cMsg" aria-live="polite"></p>
+      <div id="cList"></div></div>
+  </div>
+</div></div></section>
+
+<div id="spin" class="ov" hidden><div class="ov-in">
+  <h2 id="spinTitle">Opening pack…</h2>
+  <div class="reel"><div class="strip" id="strip"></div><div class="marker"></div></div>
+  <div class="row" style="justify-content:center"><button class="btn ghost" data-act="skip">Skip</button></div>
+</div></div>
+
+<div id="banner" class="pullb" hidden role="dialog" aria-label="Big pull">
+  <div class="rays"></div><div class="confetti" id="confetti"></div>
+  <div class="pb-in"><h1 id="pbTitle"></h1><div class="pb-card" id="pbCard"></div><p class="pb-sub" id="pbSub"></p><p class="pb-tap"><span class="tip-mouse">Click</span><span class="tip-touch">Tap</span> anywhere to continue</p></div>
+</div>
+<div id="rev" class="ov" hidden><div class="ov-in">
+  <h2>Pack opened</h2><p class="note">Tap the cards to flip them.</p>
+  <div class="rgrid" id="rgrid"></div>
+  <div class="row" style="justify-content:center"><button class="btn ghost" data-act="revall">Reveal all</button><button class="btn hot" data-act="again" id="againBtn">Open another</button><button class="btn" data-act="close">Done</button></div>
+</div></div>
+<div id="acc" class="ov" hidden><div class="ov-in panel" style="max-width:460px;text-align:left">
+  <h2>Your account</h2>
+  <p class="note" id="accNote"></p>
+  <form id="accForm"><label for="un">Username</label><div class="row"><input id="un" maxlength="16" autocomplete="off" spellcheck="false" style="flex:1"><button class="btn lime" type="submit">Save</button></div><p class="note" id="accMsg" aria-live="polite"></p></form>
+  <form id="pwForm"><label for="pwOld">Change password</label><input id="pwOld" type="password" autocomplete="current-password" placeholder="Current password" style="width:100%;margin-bottom:8px"><div class="row"><input id="pwNew" type="password" autocomplete="new-password" placeholder="New password" style="flex:1"><button class="btn ghost" type="submit">Change</button></div><p class="note" id="pwMsg" aria-live="polite"></p></form>
+  <div class="row" style="margin-top:12px"><button class="btn ghost" type="button" data-act="logout">Log out</button><button class="btn" type="button" data-act="accclose">Close</button></div>
+</div></div>
+<div id="insp" class="insp" hidden role="dialog" aria-label="Inspect card">
+  <div style="text-align:center">
+    <div class="stage" id="stage"><div class="icard" id="icard"><div class="iface ifront" id="ifront"></div><div class="iface iback" id="iback"></div></div></div>
+    <p class="note">Drag to turn it around · <span class="tip-mouse">double-click to flip · Esc to close</span><span class="tip-touch">double-tap to flip</span></p>
+    <div class="row" style="justify-content:center"><button class="btn ghost" data-act="iflip">Flip</button><button class="btn ghost" data-act="ireset">Reset</button><button class="btn" data-act="iclose">Close</button></div>
+  </div>
+</div>
+<div id="sell" class="ov" hidden><div class="ov-in panel" style="max-width:460px;text-align:left">
+  <h2>Sell <span id="sName"></span></h2>
+  <div id="sCard" style="width:140px;margin:6px 0 10px"></div>
+  <form id="sForm"><label for="sPrice">Price in shards</label><input id="sPrice" type="number" min="1" max="100000" step="1" style="width:100%">
+  <p class="note" id="sHint"></p><p class="note" id="sMsg" aria-live="polite"></p>
+  <div class="row"><button class="btn lime" type="submit">List on the market</button><button class="btn ghost" type="button" data-act="quick" id="sQuick">Sell to the game</button><button class="btn ghost" type="button" data-act="sclose">Cancel</button></div></form>
+  <p class="note">Listing takes the card out of your collection. Cancel the listing any time to get it back. When someone buys it, the shards are added to your account.</p>
+</div></div>
+<div id="toasts" aria-live="polite"></div>
+
+
+<script src="config.js?v=20d432c52c48"></script>
+<script src="vendor/supabase.js?v=20d432c52c48"></script>
+<script src="game.js?v=20d432c52c48"></script>
+</body>
+</html>
