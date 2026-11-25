@@ -283,7 +283,20 @@ function renderPlayers(){const q=$('#pq').value.trim().toLowerCase();$('#plist')
 async function loadFilter(){try{const f=await rpc('dg_admin_get_filter');$('#fAny').value=(f.any||[]).join('\n');$('#fWord').value=(f.word||[]).join('\n')}catch(e){}}
 async function checkNames(){try{const bad=await rpc('dg_admin_bad_names');$('#fBad').innerHTML=(bad||[]).map(r=>`<div class="q"><div><b>${esc(r.username)}</b></div><button class="mini" data-act="aClrId" data-id="${esc(r.id)}">Clear name</button></div>`).join('')||'<p class="note">None. Every current username passes.</p>'}catch(e){$('#fBad').innerHTML='<p class="note">Could not check names right now.</p>'}}
 let adminLoaded=false;
-function renderAdmin(){if(!adminLoaded){adminLoaded=true;loadPlayers();loadFilter();checkNames();loadCodes();loadSync()}renderPlayers()}
+function renderAdmin(){if(!adminLoaded){adminLoaded=true;loadPlayers();loadFilter();checkNames();loadCodes();loadSync()}renderPlayers();renderInv()}
+/* owner only: see and edit the picked player's cards */
+let INV={id:null};
+async function loadInv(){if(!S.owner||!SEL){INV={id:null};renderInv();return}const id=SEL.id;
+  try{const d=await rpc('dg_owner_inventory',{p_user:id});if(!SEL||SEL.id!==id)return;INV={id,u:d.u,cards:d.cards||{},when:d.when||{}}}catch(e){INV={id:null};$('#invMsg').textContent=errText(e)}renderInv()}
+function renderInv(){const box=$('#invBox');box.hidden=!S.owner;if(!S.owner)return;
+  if(!INV.id){$('#invHead').textContent=SEL?`Loading ${SEL.username}'s cards…`:'Pick a player on the left to see their cards.';$('#invList').innerHTML='';$('#invAdd').hidden=true;return}
+  const names=Object.keys(INV.cards),q=$('#invQ').value.trim().toLowerCase(),rk=n=>BY[n]?RK(BY[n]):-1;
+  const f=names.filter(n=>!q||n.toLowerCase().includes(q)).sort((a,b)=>(rk(b)-rk(a))||(((BY[a]||{}).p||0)-((BY[b]||{}).p||0)));
+  $('#invHead').textContent=`${INV.u}: ${names.length} cards · ${names.filter(n=>INV.cards[n]===2).length} holo`;$('#invAdd').hidden=false;
+  $('#invList').innerHTML=f.slice(0,80).map(n=>{const h=INV.cards[n]===2;return `<div class="invrow">${tChip(n,h)}<span class="invbtns"><button class="mini" data-act="invHolo" data-n="${esc(n)}">${h?'Remove holo':'Make holo'}</button><button class="mini" data-act="invRm" data-n="${esc(n)}">Remove</button></span></div>`}).join('')
+    +(f.length>80?`<p class="note">${f.length-80} more. Search to narrow it down.</p>`:'')||`<p class="note">${names.length?'No cards match.':'No cards yet.'}</p>`}
+async function invEdit(n,holo,remove,okText){const id=INV.id;if(!id)return;
+  try{await rpc('dg_owner_card',{p_user:id,p_name:n,p_holo:holo,p_remove:remove});$('#invMsg').textContent=okText;await loadInv();loadPlayers();if(id===ME.id)refresh().catch(()=>{})}catch(e){$('#invMsg').textContent=errText(e)}}
 /* card list sync with AREDL: runs every hour on the server; this shows the last result */
 const syncText=v=>{if(!v)return 'Not synced yet. The first automatic check runs at the top of the next hour.';
   if(v.err)return `Last check ${v.t?ago(v.t):''}: ${v.err}`;
@@ -294,12 +307,13 @@ async function loadCodes(){let L;try{L=await rpc('dg_admin_codes')||[]}catch(e){
   $('#cList').innerHTML=L.map(c=>{const gift=[c.packs?`${c.packs} pack${c.packs>1?'s':''}`:'',c.shards?`${c.shards} shards`:''].filter(Boolean).join(' + '),old=c.exp&&c.exp<Date.now(),full=c.max!=null&&c.uses>=c.max;
     return `<div class="q"><div><b class="code">${esc(c.code)}</b>${old?' <span class="hb off">Expired</span>':full?' <span class="hb off">Used up</span>':''}<br><small>${gift} · used ${c.uses}${c.max!=null?' / '+c.max:''} time${(c.max!=null?c.max:c.uses)===1?'':'s'} · ${c.exp?(old?'expired ':'expires ')+ft(c.exp):'never expires'}</small></div><div class="row" style="flex-wrap:nowrap"><button class="mini" data-act="aCopy" data-c="${esc(c.code)}">Copy</button><button class="mini" data-act="aDelCode" data-c="${esc(c.code)}">Delete</button></div></div>`}).join('')||'<p class="note">No codes yet.</p>'}
 $('#pq').addEventListener('input',renderPlayers);
+$('#invQ').addEventListener('input',renderInv);
 $('#admName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ADMIN.aMkAdmin()}});
 const words=t=>[...new Set(t.split(/[\n,]+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];
 const amt=()=>Math.max(1,Math.min(9999,parseInt($('#aN').value,10)||1)),amsg=t=>{$('#aMsg').textContent=t};
 async function adm(fn,args,okText){if(!SEL&&fn!=='dg_admin_set_filter'){amsg('Pick a player first.');return}try{await rpc(fn,args);amsg(okText);await loadPlayers();SEL=PL.find(p=>p.id===(SEL&&SEL.id))||SEL;renderPlayers();if(SEL&&SEL.id===ME.id)await refresh()}catch(e){amsg(errText(e))}}
 const ADMIN={
-  aPick(b){SEL=PL.find(p=>p.id===b.dataset.id);amsg('');renderPlayers()},
+  aPick(b){SEL=PL.find(p=>p.id===b.dataset.id);amsg('');renderPlayers();INV={id:null};renderInv();loadInv()},
   aPacks(){adm('dg_admin_give',{p_user:SEL&&SEL.id,p_packs:amt(),p_shards:0},`Gave ${amt()} packs.`)},
   aNd(){adm('dg_admin_give_nd',{p_user:SEL&&SEL.id,p_n:amt()},`Gave ${amt()} No-Dupe packs.`)},
   aShards(){adm('dg_admin_give',{p_user:SEL&&SEL.id,p_packs:0,p_shards:amt()},`Gave ${amt()} shards.`)},
@@ -319,6 +333,11 @@ const ADMIN={
   async aSync(b){b.disabled=true;$('#syncInfo').textContent='Asking AREDL for the latest list…';
     try{await rpc('dg_admin_aredl_request');let r=null;for(let i=0;i<8;i++){await new Promise(z=>setTimeout(z,5000));r=await rpc('dg_admin_aredl_collect');if(!r||!r.wait)break}
       $('#syncInfo').textContent=r&&r.wait?'AREDL is slow to answer. The hourly check will pick it up.':syncText(r);if(r&&r.ok){await loadDefs();render()}}catch(e){$('#syncInfo').textContent=errText(e)}b.disabled=false},
+  invHolo(b){const n=b.dataset.n,h=INV.cards[n]===2;invEdit(n,!h,false,`${n} is ${h?'no longer':'now'} holo for ${INV.u}.`)},
+  invRm(b){const n=b.dataset.n;arm(b,'invrm'+n,()=>invEdit(n,false,true,`Removed ${n} from ${INV.u}.`))},
+  invAdd(){const n=$('#invCard').value.trim(),h=$('#invHoloNew').checked;if(!n)return $('#invMsg').textContent='Type a card name first.';
+    if(INV.cards[n]&&(INV.cards[n]===2||!h))return $('#invMsg').textContent=`${INV.u} already has ${n}.`;
+    invEdit(n,h,false,`Gave ${n}${h?' (holo)':''} to ${INV.u}.`).then(()=>{$('#invCard').value=''})},
   aFilter(){const a=words($('#fAny').value),w=words($('#fWord').value);rpc('dg_admin_set_filter',{p_any:a,p_word:w}).then(()=>{$('#fMsg').textContent=`Saved: ${a.length} anywhere, ${w.length} whole-word.`;checkNames()}).catch(e=>{$('#fMsg').textContent=errText(e)})}};
 
 /* ---------- clicks ---------- */

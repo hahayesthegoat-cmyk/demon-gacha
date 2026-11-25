@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<meta name="dg-version" content="793a1c6c8808">
+<meta name="dg-version" content="3e1af20c33f1">
 <title>Demon Gacha</title>
 <style>
 @font-face{font-family:"Lilita One";src:url(fonts/lilita-one-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -235,6 +235,10 @@ tr.me td{background:#24380f}
 .notice-note{font-size:15px;color:var(--mute);margin:-8px 0 16px!important}
 .notice-extra{font:22px "Lilita One",sans-serif;color:var(--lime);margin:-6px 0 18px!important}
 .notice-card{width:150px;margin:0 auto}.notice-card:empty{display:none}
+/* owner inventory */
+.invlist{max-height:460px;overflow:auto}
+.invrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.invrow .tchip{flex:1 1 auto;min-width:0}.invbtns{display:flex;gap:6px;flex:none}
 /* trades */
 .nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:5px;padding:0 5px;border-radius:99px;background:var(--hot);color:#fff;font:700 11px/1 Rubik,sans-serif;vertical-align:2px}
 .nbadge[hidden]{display:none}
@@ -495,6 +499,15 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
       <div class="row"><input id="aPw" type="text" autocomplete="off" placeholder="6 or more characters" style="flex:1"><button class="btn ghost" data-act="aSetPw">Set password</button></div>
       <div class="row" style="margin-top:16px"><button class="btn ghost" data-act="aClr" id="aClrBtn">Clear username</button><button class="btn ghost" data-act="aReset" id="aResetBtn">Reset this account</button></div>
       <p class="note" id="aMsg" aria-live="polite"></p></div>
+    <div class="panel" id="invBox" hidden><h2>Inventory</h2>
+      <p class="note">Only you can see this. Every card the picked player owns; change holo, remove cards, or add any card.</p>
+      <p id="invHead"></p>
+      <div id="invAdd" hidden>
+        <div class="row"><input id="invCard" list="allNames" placeholder="Add a card: start typing a level name" autocomplete="off" style="flex:1;min-width:0"><label class="chk"><input type="checkbox" id="invHoloNew"> Holo</label><button class="btn lime sm" data-act="invAdd">Add</button></div>
+        <input id="invQ" type="search" placeholder="Search their cards" aria-label="Search their cards" style="width:100%;margin-top:10px">
+      </div>
+      <p class="note" id="invMsg" aria-live="polite"></p>
+      <div id="invList" class="invlist"></div></div>
     <div class="panel"><h2>Card list</h2>
       <p class="note">The cards follow the AREDL list by themselves: every hour the server adds new demons, updates positions and rarities, and marks levels that leave the list as "Removed" (players keep them).</p>
       <p id="syncInfo" aria-live="polite"></p>
@@ -568,8 +581,8 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
 <div id="toasts" aria-live="polite"></div>
 
 
-<script src="config.js?v=793a1c6c8808"></script>
-<script src="vendor/supabase.js?v=793a1c6c8808"></script>
-<script src="game.js?v=793a1c6c8808"></script>
+<script src="config.js?v=3e1af20c33f1"></script>
+<script src="vendor/supabase.js?v=3e1af20c33f1"></script>
+<script src="game.js?v=3e1af20c33f1"></script>
 </body>
 </html>
