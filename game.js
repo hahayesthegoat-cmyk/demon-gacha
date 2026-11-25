@@ -327,6 +327,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]
   else if(a==='openMini'){if(window.dgDesk)window.dgDesk.pip(true)}else if(a==='miniFull'||a==='miniClose'){if(window.dgDesk)window.dgDesk.pip(false);else window.close()}
   else if(a==='autoT'){AUTO.on=b.checked;ls('dg-auto',AUTO.on?'1':'0');if(AUTO.on)toast('Auto-open is on: packs open by themselves');render()}
   else if(a==='autoNdT'){AUTO.nd=b.checked;ls('dg-auto-nd',AUTO.nd?'1':'0');render()}
+  else if(a==='autoBuyT'){AUTO.buy=b.checked;ls('dg-auto-buy',AUTO.buy?'1':'0');if(AUTO.buy)toast('Auto-open will buy No-Dupe packs whenever you have 300 shards');render()}
   else if(a==='buyAuto')act('dg_buy_autoopen',{},()=>{AUTO.on=true;ls('dg-auto','1');toast('Auto-open unlocked and switched on!')});
   else if(a==='noticeOk')closeNotice();
   else if(a==='invCopy')copyText(inviteText()).then(()=>toast('Invite copied. Paste it to a friend!'),()=>toast(`Your invite code: ${S.invite}`));
@@ -396,11 +397,13 @@ $('#tWho').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault()
 const MINI=new URLSearchParams(location.search).has('mini');
 if(MINI){document.body.classList.add('mini');$('#mini').hidden=false;document.title='Demon Gacha mini'}
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
-const AUTO={on:ls('dg-auto')==='1',nd:ls('dg-auto-nd')==='1'};
-addEventListener('storage',e=>{if(e.key==='dg-auto'||e.key==='dg-auto-nd'){AUTO.on=ls('dg-auto')==='1';AUTO.nd=ls('dg-auto-nd')==='1';render()}});
+const AUTO={on:ls('dg-auto')==='1',nd:ls('dg-auto-nd')==='1',buy:ls('dg-auto-buy')==='1'};
+addEventListener('storage',e=>{if(/^dg-auto/.test(e.key||'')){AUTO.on=ls('dg-auto')==='1';AUTO.nd=ls('dg-auto-nd')==='1';AUTO.buy=ls('dg-auto-buy')==='1';render()}});
+/* every card on the list and both special cards: buying No-Dupe packs would only give shards back */
+const listDone=()=>uniq()>=LIST.length&&HMS.every(c=>S.cards[c.n]);
 const rarName=c=>c.r===5?'Honorable Mention':RAR[c.r].k;
 function autoHTML(){if(!S.auto)return `<button class="btn lime sm" data-act="buyAuto"${S.shards<1000?' disabled':''} title="Opens your packs by itself while it's switched on">Unlock auto-open · 1,000 shards</button>`;
-  return `<label class="chk"><input type="checkbox" data-act="autoT"${AUTO.on?' checked':''}> Auto-open packs</label><label class="chk"><input type="checkbox" data-act="autoNdT"${AUTO.nd?' checked':''}> Include No-Dupe packs</label>`}
+  return `<label class="chk"><input type="checkbox" data-act="autoT"${AUTO.on?' checked':''}> Auto-open packs</label><label class="chk"><input type="checkbox" data-act="autoNdT"${AUTO.nd?' checked':''}> Include No-Dupe packs</label><label class="chk" title="When you run out of packs, spend 300 shards on a No-Dupe pack and open it. Stops when your collection is complete."><input type="checkbox" data-act="autoBuyT"${AUTO.buy?' checked':''}> Buy No-Dupe packs with shards</label>`}
 /* the mini window says it's open, so the big window doesn't auto-open at the same time */
 const pipAlive=()=>Date.now()-(+ls('dg-pip-beat')||0)<5000;
 if(MINI){setInterval(()=>ls('dg-pip-beat',String(Date.now())),2000);ls('dg-pip-beat',String(Date.now()));addEventListener('beforeunload',()=>ls('dg-pip-beat','0'))}
@@ -416,7 +419,8 @@ async function quickOpen(nd,auto){nd=!!nd;if(busy||(nd?S.nd:S.packs)<1)return fa
   else if(big)toast(`${auto?'Auto-open: ':''}${label} · ${best.c.n}`);
   try{await refresh()}catch(e){}busy=false;render();if(pulls.some(p=>p.c.r>=3))loadFeed();return true}
 setInterval(()=>{if(!S||!S.auto||!AUTO.on||busy)return;if(!MINI&&pipAlive())return;if(!$('#rev').hidden||!$('#spin').hidden||!$('#banner').hidden||!$('#insp').hidden)return;
-  if(S.packs>0)quickOpen(false,true);else if(AUTO.nd&&S.nd>0)quickOpen(true,true)},4000);
+  if(S.packs>0)quickOpen(false,true);else if((AUTO.nd||AUTO.buy)&&S.nd>0)quickOpen(true,true);
+  else if(AUTO.buy&&S.shards>=300&&!listDone()){busy=true;rpc('dg_buy_nodupe').then(()=>refresh()).catch(e=>{AUTO.buy=false;ls('dg-auto-buy','0');toast('Auto-buy stopped: '+errText(e))}).finally(()=>{busy=false;render()})}},4000);
 const mcard=p=>{const c=p.c,R=RAR[c.r];return `<div class="mc${p.h?' holo':''}${p.full?' full':''}${p.nw?' new':''}" style="--rc:${R.c}" title="${esc(c.n)} · ${esc((p.h?'Holo ':'')+rarName(c))}${c.hm?'':' · #'+c.p} · ${esc(p.tag)}"><img src="face.png" alt="" style="filter:${TINT[c.r]}"><b>${esc(c.n)}</b></div>`};
 function renderMini(){if(!MINI||!S)return;
   const full=S.packs>=CAP||!nextAt,left=Math.max(0,(nextAt||0)-Date.now());
@@ -424,7 +428,7 @@ function renderMini(){if(!MINI||!S)return;
   $('#mTime').innerHTML=full?'Timer full':`Next pack in <b>${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,'0')}</b>`;
   $('#mBar').style.width=(full?100:(1-left/600000)*100)+'%';
   $('#mOpen').disabled=S.packs<1||busy;$('#mNdBtn').disabled=S.nd<1||busy;
-  setH($('#mAuto'),autoHTML()+(S.auto&&AUTO.on?`<p class="mnote">${S.packs||(AUTO.nd&&S.nd)?'Opening your packs…':'Waiting for the next pack.'}</p>`:''));
+  setH($('#mAuto'),autoHTML()+(S.auto&&AUTO.on?`<p class="mnote">${S.packs||((AUTO.nd||AUTO.buy)&&S.nd)?'Opening your packs…':AUTO.buy&&S.shards>=300&&!listDone()?'Buying a No-Dupe pack…':AUTO.buy&&listDone()?'Collection complete! Auto-buy is resting.':'Waiting for the next pack'+(AUTO.buy?' or 300 shards.':'.')}</p>`:''));
   if(flashT&&Date.now()-flashT>5000){flashT=0;$('#mFlash').hidden=true}
   const q=lastQuick;setH($('#mLast'),q?`<p class="mlab">${q.auto?'Auto-opened':'Last'} ${q.nd?'No-Dupe pack':'pack'} · ${q.pulls.filter(p=>p.nw).length} new</p><div class="mgrid">${q.pulls.map(mcard).join('')}</div><p class="mbest" style="color:${RAR[q.best.c.r].c}">${esc((q.best.h?'Holo ':'')+rarName(q.best.c))} · ${esc(q.best.c.n)}</p>`:'<p class="mnote">Open a pack and your cards show up here.</p>');
   const f=(FEED.feed||[]).find(x=>BY[x.n]);setH($('#mFeed'),f?`<span class="mlab">Latest rare pull</span> <b>${esc(f.u)}</b> · <span style="color:${RAR[BY[f.n].r].c}">${BY[f.n].hm?'':'#'+BY[f.n].p+' '}${esc(f.n)}</span> · ${ago(f.t)}`:'')}
