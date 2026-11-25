@@ -53,8 +53,8 @@ const dayMinus1=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()
 /* each card: 1 in 1,000 is the APEX, then 0.5% Honorable Mention, then the normal rarity roll */
 /* rank for sorting: APEX (GRIEF) is the top tier, IME just below it */
 const RK=c=>c.r===6?8:c.r===7?7:c.r;
-/* each card: 1 in 500 is IME, then 1 in 1,000 APEX, then 0.5% Honorable Mention, then the normal rarity roll */
-const K=.998*.999*.995,ODDS={c:.6*K,r:.25*K,e:.1*K,l:.04*K,m:.01*K,hm:.998*.999*.005,apex:.998*.001,ime:.002};
+/* each card: 1 in 1,000 APEX, then 0.5% Honorable Mention, then the normal rarity roll (IME was removed from the game) */
+const K=.999*.995,ODDS={c:.6*K,r:.25*K,e:.1*K,l:.04*K,m:.01*K,hm:.999*.005,apex:.001,ime:0};
 function binTail(n,k,p){if(k<=0)return 1;if(k>n)return 0;const lq=Math.log1p(-p),r=p/(1-p);let lc=0;for(let i=1;i<=k;i++)lc+=Math.log(n-k+i)-Math.log(i);
   let pmf=Math.exp(lc+k*Math.log(p)+(n-k)*lq),sum=0;for(let j=k;j<=n;j++){sum+=pmf;pmf*=(n-j)/(j+1)*r;if(pmf<sum*1e-12)break}return Math.min(1,sum)}
 function luckOf(p){p=p||{};const n=+p.n||0;if(n<1)return null;const big=(+p.l||0)+(+p.m||0)+(+p.hm||0)+(+p.apex||0)+(+p.ime||0),pb=ODDS.l+ODDS.m+ODDS.hm+ODDS.apex+ODDS.ime;
@@ -85,7 +85,7 @@ function renderInvite(){const L=S.invites;
   (S.invitedBy?`<p class="note">You were invited by <b>${esc(S.invitedBy)}</b>.</p>`:''))}
 function renderLuck(){const b=$('#luckBox'),L=luckOf(S.pulls);if(!L||L.n<5){setH(b,'<h2>Your luck</h2><p class="note">Open a few packs and your luck shows up here.</p>');return}
   const verdict=L.pct>=200?'absurdly lucky':L.pct>=140?'very lucky':L.pct>=110?'lucky':L.pct>=90?'right on normal':L.pct>=70?'a bit unlucky':'unlucky so far';
-  const rows=[['apex','APEX'],['ime','IME'],['m','Mythic'],['l','Legendary'],['hm','Honorable Mention'],['e','Epic'],['r','Rare'],['c','Common'],['holo','Holo']].map(([k,t])=>{const got=+S.pulls[k]||0,e=L.n*(k==='holo'?HOLO:ODDS[k]),d=e?Math.round((got/e-1)*100):0;
+  const rows=[['apex','APEX'],['m','Mythic'],['l','Legendary'],['hm','Honorable Mention'],['e','Epic'],['r','Rare'],['c','Common'],['holo','Holo']].map(([k,t])=>{const got=+S.pulls[k]||0,e=L.n*(k==='holo'?HOLO:ODDS[k]),d=e?Math.round((got/e-1)*100):0;
     return `<tr><td>${t}</td><td class="n">${got}</td><td class="n">${e<10?e.toFixed(1):Math.round(e)}</td><td class="n" style="color:${got>=e?'var(--lime)':'var(--mute)'}">${d>0?'+':''}${d}%</td></tr>`}).join('');
   const rare=L.tail<.5?`Only about <b>1 in ${bigNum(1/L.tail)}</b> players would pull ${L.big} Legendary-or-better cards in ${L.n} cards.`:`You've pulled ${L.big} Legendary-or-better card${L.big===1?'':'s'} in ${L.n}; about ${(L.n*L.pb).toFixed(1)} is normal.`;
   setH(b,`<h2>Your luck</h2><p style="font:44px/1 'Lilita One',sans-serif;margin:6px 0 10px">${Math.round(L.pct)}% <small style="font:16px Rubik,sans-serif;color:var(--mute)">of normal · ${verdict}</small></p><p>${rare}</p><table class="stack"><thead><tr><th>Rarity</th><th class="n">You got</th><th class="n">Normal</th><th class="n">Difference</th></tr></thead><tbody>${rows}</tbody></table><p class="note">Luck compares your Legendary, Mythic, APEX, IME and Honorable Mention pulls with the normal number for ${L.n} cards. It counts every card you've pulled from packs on this server.</p>`)}
@@ -473,15 +473,17 @@ setInterval(()=>{if(MINI&&S){renderMini();if(Date.now()-feedAt>30000)loadFeed()}
 const IME_CUT=Date.parse('2026-11-25T02:40:00Z');
 const NOTICES=[{id:'ime-lowered',show:()=>!!S.cards['IT MEANS EVERYTHING']&&(S.when['IT MEANS EVERYTHING']||0)<IME_CUT,title:'Im Sorry :(',body:'IT MEANS EVERYTHING has been lowered under APEX (GRIEF)',note:'It was an accident for IME to be above GRIEF.',extra:'+1,000 shards as a sorry',card:'IT MEANS EVERYTHING'}];
 /* ---------- announcements: the owner posts, everyone gets a pop-up once and sees it on Home ---------- */
-let ANN=[],annAt=0;
-async function loadAnn(){annAt=Date.now();try{const {data}=await SB.from('announcements').select('id,title,body,created_at').order('id',{ascending:false}).limit(5);ANN=data||[]}catch(e){}renderAnn()}
+let ANN=[],UN=[],annAt=0;
+async function loadAnn(){annAt=Date.now();try{const {data}=await SB.from('announcements').select('id,title,body,created_at').order('id',{ascending:false}).limit(5);ANN=data||[]}catch(e){}
+  try{const {data,error}=await SB.from('user_notices').select('id,title,body,extra,note').order('id');if(!error)UN=data||[]}catch(e){}renderAnn()}
 function renderAnn(){if(!S)return;const box=$('#annBox');box.hidden=!ANN.length;
   setH(box,`<div class="wrap">${ANN.map(a=>`<div class="ann"><p class="ann-t"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 10v4h3l6 4V6L6 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" fill="currentColor"/></svg><b>${esc(a.title)}</b><small>${ago(Date.parse(a.created_at))}</small></p>${a.body?`<p class="ann-b">${esc(a.body)}</p>`:''}</div>`).join('')}</div>`);
   if(S.owner)setH($('#annList'),ANN.length?'<label>Showing now</label>'+ANN.map(a=>`<div class="q"><div><b>${esc(a.title)}</b><br><small>${ago(Date.parse(a.created_at))}</small></div><button class="mini" data-act="annEnd" data-id="${a.id}">Remove</button></div>`).join(''):'<p class="note">No announcements showing.</p>')}
 setInterval(()=>{if(S&&Date.now()-annAt>60000)loadAnn()},5000);
 function showNotices(){if(!S||!$('#notice').hidden)return;
   const a=ANN.slice().reverse().find(x=>!ls('dg-notice-ann-'+x.id));
-  const n=NOTICES.find(x=>!ls('dg-notice-'+x.id)&&x.show())||(a&&{id:'ann-'+a.id,title:a.title,body:a.body,ann:true});if(!n)return;
+  const u=UN.find(x=>!ls('dg-notice-u-'+x.id));
+  const n=NOTICES.find(x=>!ls('dg-notice-'+x.id)&&x.show())||(u&&{id:'u-'+u.id,title:u.title,body:u.body,extra:u.extra,note:u.note})||(a&&{id:'ann-'+a.id,title:a.title,body:a.body,ann:true});if(!n)return;
   $('#nTitle').textContent=n.title;$('#nBody').textContent=n.body;$('#nExtra').textContent=n.extra||'';$('#nExtra').hidden=!n.extra;$('#nNote').textContent=n.note||'';$('#nNote').hidden=!n.note;$('#nCard').innerHTML=n.card&&BY[n.card]?card(BY[n.card],S.cards[n.card]===2):'';$('#notice').dataset.id=n.id;$('#notice').classList.toggle('isann',!!n.ann);$('#notice').hidden=false}
 function closeNotice(){const b=$('#notice');if(b.hidden)return;ls('dg-notice-'+b.dataset.id,'1');b.hidden=true;setTimeout(showNotices,300)}
 setInterval(()=>{if(S&&!busy&&['rev','spin','banner','insp'].every(id=>$('#'+id).hidden))showNotices()},2000);
