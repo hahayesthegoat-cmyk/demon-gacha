@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<meta name="dg-version" content="20d432c52c48">
+<meta name="dg-version" content="3feb570a2db3">
 <title>Demon Gacha</title>
 <style>
 @font-face{font-family:"Lilita One";src:url(fonts/lilita-one-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -227,6 +227,14 @@ tr.me td{background:#24380f}
 .pullb.imb .pb-in h1{background:linear-gradient(90deg,#fff3c4,#ffd76a,#e0a100,#ffd76a,#fff3c4);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px #ffd76a) drop-shadow(0 4px 0 #000);animation:apexslide 2.5s linear infinite}
 .fd>i.im{background:conic-gradient(#fff3c4,#ffd76a,#e0a100,#fff3c4);box-shadow:0 0 10px #ffd76a}
 @media(prefers-reduced-motion:reduce){.card.ime,.card.ime::before,.pullb.imb .pb-in h1{animation:none}}
+/* one-time notices */
+.notice{position:fixed;inset:0;z-index:85;display:grid;place-items:center;padding:20px;background:#000b}
+.notice[hidden]{display:none}
+.notice-in{width:min(420px,100%);text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 20px;box-shadow:0 20px 60px #000c}
+.notice-in h2{font-size:34px;margin:0 0 12px}.notice-in p{font-size:17px;margin:12px 0 18px}
+.notice-note{font-size:15px;color:var(--mute);margin:-8px 0 16px!important}
+.notice-extra{font:22px "Lilita One",sans-serif;color:var(--lime);margin:-6px 0 18px!important}
+.notice-card{width:150px;margin:0 auto}.notice-card:empty{display:none}
 /* trades */
 .nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:5px;padding:0 5px;border-radius:99px;background:var(--hot);color:#fff;font:700 11px/1 Rubik,sans-serif;vertical-align:2px}
 .nbadge[hidden]{display:none}
@@ -249,7 +257,7 @@ tr.me td{background:#24380f}
 .tst{display:inline-block;padding:1px 8px;border-radius:99px;font:700 12px/1.5 Rubik,sans-serif;background:var(--panel2);color:var(--mute)}
 .tst.accepted{background:var(--lime);color:#132200}
 /* mini window (desktop): a small always-on-top view */
-body.mini>*:not(#mini):not(.gate):not(#toasts){display:none!important}
+body.mini>*:not(#mini):not(.gate):not(#toasts):not(#notice){display:none!important}
 body.mini{overflow:hidden}
 #mini{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
 #mini[hidden]{display:none}
@@ -405,7 +413,7 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
     <div class="bar"><i id="colBar"></i></div>
     <div class="tools">
       <input id="fq" type="search" placeholder="Search demons" aria-label="Search demons">
-      <select id="fr" aria-label="Rarity"><option value="all">All rarities</option><option value="7">IME</option><option value="6">APEX</option><option value="5">Honorable Mention</option><option value="4">Mythic</option><option value="3">Legendary</option><option value="2">Epic</option><option value="1">Rare</option><option value="0">Common</option></select>
+      <select id="fr" aria-label="Rarity"><option value="all">All rarities</option><option value="6">APEX</option><option value="7">IME</option><option value="5">Honorable Mention</option><option value="4">Mythic</option><option value="3">Legendary</option><option value="2">Epic</option><option value="1">Rare</option><option value="0">Common</option></select>
       <select id="fl" aria-label="List section"><option value="all">Any section</option><option value="main">Main (#1–75)</option><option value="ext">Extended (#76–150)</option><option value="leg">Legacy (#151+)</option><option value="sbe">SBE (Should Be Extreme)</option></select>
       <select id="fs" aria-label="Show"><option value="all">Owned and missing</option><option value="own">Owned</option><option value="miss">Missing</option><option value="holo">Holo</option></select>
     </div>
@@ -425,7 +433,7 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
     <div class="mkHead"><h2 style="margin:0">For sale</h2><span class="note" id="mkCount"></span></div>
     <div class="tools">
       <input id="mq" type="search" placeholder="Search cards or sellers" aria-label="Search the market">
-      <select id="mr" aria-label="Rarity"><option value="all">All rarities</option><option value="7">IME</option><option value="6">APEX</option><option value="5">Honorable Mention</option><option value="4">Mythic</option><option value="3">Legendary</option><option value="2">Epic</option><option value="1">Rare</option><option value="0">Common</option></select>
+      <select id="mr" aria-label="Rarity"><option value="all">All rarities</option><option value="6">APEX</option><option value="7">IME</option><option value="5">Honorable Mention</option><option value="4">Mythic</option><option value="3">Legendary</option><option value="2">Epic</option><option value="1">Rare</option><option value="0">Common</option></select>
       <select id="mo" aria-label="Sort"><option value="new">Newest first</option><option value="cheap">Cheapest first</option><option value="rare">Rarest first</option></select>
     </div>
     <div class="cgrid" id="mkAll"></div>
@@ -550,11 +558,14 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
   <div class="row"><button class="btn lime" type="submit">List on the market</button><button class="btn ghost" type="button" data-act="quick" id="sQuick">Sell to the game</button><button class="btn ghost" type="button" data-act="sclose">Cancel</button></div></form>
   <p class="note">Listing takes the card out of your collection. Cancel the listing any time to get it back. When someone buys it, the shards are added to your account.</p>
 </div></div>
+<div id="notice" class="notice" hidden role="dialog" aria-modal="true" aria-labelledby="nTitle"><div class="notice-in">
+  <h2 id="nTitle"></h2><div class="notice-card" id="nCard"></div><p id="nBody"></p><p class="notice-note" id="nNote" hidden></p><p class="notice-extra" id="nExtra" hidden></p>
+  <button class="btn lime" data-act="noticeOk">OK</button></div></div>
 <div id="toasts" aria-live="polite"></div>
 
 
-<script src="config.js?v=20d432c52c48"></script>
-<script src="vendor/supabase.js?v=20d432c52c48"></script>
-<script src="game.js?v=20d432c52c48"></script>
+<script src="config.js?v=3feb570a2db3"></script>
+<script src="vendor/supabase.js?v=3feb570a2db3"></script>
+<script src="game.js?v=3feb570a2db3"></script>
 </body>
 </html>

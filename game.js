@@ -48,15 +48,18 @@ const dayMinus1=d=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()
 /* ---------- views ---------- */
 /* luck: Legendary-or-better cards you've pulled compared with the normal number for that many cards */
 /* each card: 1 in 1,000 is the APEX, then 0.5% Honorable Mention, then the normal rarity roll */
-const K=.999*.999*.995,ODDS={c:.6*K,r:.25*K,e:.1*K,l:.04*K,m:.01*K,hm:.999*.999*.005,apex:.999*.001,ime:.001};
+/* rank for sorting: APEX (GRIEF) is the top tier, IME just below it */
+const RK=c=>c.r===6?8:c.r===7?7:c.r;
+/* each card: 1 in 500 is IME, then 1 in 1,000 APEX, then 0.5% Honorable Mention, then the normal rarity roll */
+const K=.998*.999*.995,ODDS={c:.6*K,r:.25*K,e:.1*K,l:.04*K,m:.01*K,hm:.998*.999*.005,apex:.998*.001,ime:.002};
 function binTail(n,k,p){if(k<=0)return 1;if(k>n)return 0;const lq=Math.log1p(-p),r=p/(1-p);let lc=0;for(let i=1;i<=k;i++)lc+=Math.log(n-k+i)-Math.log(i);
   let pmf=Math.exp(lc+k*Math.log(p)+(n-k)*lq),sum=0;for(let j=k;j<=n;j++){sum+=pmf;pmf*=(n-j)/(j+1)*r;if(pmf<sum*1e-12)break}return Math.min(1,sum)}
 function luckOf(p){p=p||{};const n=+p.n||0;if(n<1)return null;const big=(+p.l||0)+(+p.m||0)+(+p.hm||0)+(+p.apex||0)+(+p.ime||0),pb=ODDS.l+ODDS.m+ODDS.hm+ODDS.apex+ODDS.ime;
   return{n,pct:big/(n*pb)*100,big,pb,tail:binTail(n,big,pb)}}
 const setH=(el,h)=>{if(el._h!==h){el._h=h;el.innerHTML=h}};
 const bigNum=x=>x>=1e6?(x/1e6).toFixed(x>=1e7?0:1)+' million':Math.round(x).toLocaleString();
-/* your rarest cards: IME, APEX, then Honorable Mentions, then Mythic down; holos first; then higher on the list */
-function renderRare(){const own=HMS.concat(LIST).filter(c=>S.cards[c.n]);own.sort((a,b)=>(b.r-a.r)||((S.cards[b.n]===2)-(S.cards[a.n]===2))||((a.p||0)-(b.p||0)));
+/* your rarest cards: APEX, IME, then Honorable Mentions, then Mythic down; holos first; then higher on the list */
+function renderRare(){const own=HMS.concat(LIST).filter(c=>S.cards[c.n]);own.sort((a,b)=>(RK(b)-RK(a))||((S.cards[b.n]===2)-(S.cards[a.n]===2))||((a.p||0)-(b.p||0)));
   const top=own.slice(0,6);setH($('#rareBox'),`<h2>Your rarest cards</h2>`+(top.length?`<div class="cgrid">${top.map(c=>`<div class="cell">${card(c,S.cards[c.n]===2)}</div>`).join('')}</div><p class="note"><span class="tip-mouse">Double-click</span><span class="tip-touch">Double-tap</span> a card to inspect it.</p>`:'<p class="note">Open a pack and your best cards show up here.</p>'))}
 /* Home rows: newest cards, the 7 hardest demons, everyone's rare pulls */
 let FEED={feed:[],top:null},feedAt=0;
@@ -79,7 +82,7 @@ function renderInvite(){const L=S.invites;
   (S.invitedBy?`<p class="note">You were invited by <b>${esc(S.invitedBy)}</b>.</p>`:''))}
 function renderLuck(){const b=$('#luckBox'),L=luckOf(S.pulls);if(!L||L.n<5){setH(b,'<h2>Your luck</h2><p class="note">Open a few packs and your luck shows up here.</p>');return}
   const verdict=L.pct>=200?'absurdly lucky':L.pct>=140?'very lucky':L.pct>=110?'lucky':L.pct>=90?'right on normal':L.pct>=70?'a bit unlucky':'unlucky so far';
-  const rows=[['ime','IME'],['apex','APEX'],['m','Mythic'],['l','Legendary'],['hm','Honorable Mention'],['e','Epic'],['r','Rare'],['c','Common'],['holo','Holo']].map(([k,t])=>{const got=+S.pulls[k]||0,e=L.n*(k==='holo'?HOLO:ODDS[k]),d=e?Math.round((got/e-1)*100):0;
+  const rows=[['apex','APEX'],['ime','IME'],['m','Mythic'],['l','Legendary'],['hm','Honorable Mention'],['e','Epic'],['r','Rare'],['c','Common'],['holo','Holo']].map(([k,t])=>{const got=+S.pulls[k]||0,e=L.n*(k==='holo'?HOLO:ODDS[k]),d=e?Math.round((got/e-1)*100):0;
     return `<tr><td>${t}</td><td class="n">${got}</td><td class="n">${e<10?e.toFixed(1):Math.round(e)}</td><td class="n" style="color:${got>=e?'var(--lime)':'var(--mute)'}">${d>0?'+':''}${d}%</td></tr>`}).join('');
   const rare=L.tail<.5?`Only about <b>1 in ${bigNum(1/L.tail)}</b> players would pull ${L.big} Legendary-or-better cards in ${L.n} cards.`:`You've pulled ${L.big} Legendary-or-better card${L.big===1?'':'s'} in ${L.n}; about ${(L.n*L.pb).toFixed(1)} is normal.`;
   setH(b,`<h2>Your luck</h2><p style="font:44px/1 'Lilita One',sans-serif;margin:6px 0 10px">${Math.round(L.pct)}% <small style="font:16px Rubik,sans-serif;color:var(--mute)">of normal · ${verdict}</small></p><p>${rare}</p><table class="stack"><thead><tr><th>Rarity</th><th class="n">You got</th><th class="n">Normal</th><th class="n">Difference</th></tr></thead><tbody>${rows}</tbody></table><p class="note">Luck compares your Legendary, Mythic, APEX, IME and Honorable Mention pulls with the normal number for ${L.n} cards. It counts every card you've pulled from packs on this server.</p>`)}
@@ -103,7 +106,7 @@ function renderCol(){const u=uniq(),N=LIST.length;$('#colHead').textContent=`${u
   const q=COL.q.toLowerCase(),f=HMS.concat(LIST).filter(c=>{const o=S.cards[c.n]||0;return(COL.r==='all'||c.r==+COL.r)&&(COL.l==='all'||(c.hm?COL.l==='sbe':SEC(c.p)[0]===COL.l))&&(!q||c.n.toLowerCase().includes(q))&&(COL.s==='all'||(COL.s==='own'&&o)||(COL.s==='miss'&&!o)||(COL.s==='holo'&&o===2))});
   $('#grid').innerHTML=f.slice(0,COL.lim).map(c=>{const o=S.cards[c.n]||0,cost=RAR[c.r].cr;return `<div class="cell">${card(c,o===2,!o)}${o?(S.when[c.n]?`<small class="note" style="margin:0">Got ${ft(S.when[c.n])}</small>`:'')+`<button class="mini" data-act="sell" data-n="${esc(c.n)}">Sell</button>`:`<button class="mini" data-act="craft" data-n="${esc(c.n)}"${S.shards<cost?' disabled':''}>Craft · ${cost} shards</button>`}</div>`}).join('')||'<p class="note">No demons match.</p>';
   $('#moreBtn').hidden=f.length<=COL.lim;
-  $('#hist').innerHTML=S.log.length?S.log.slice(0,30).map(e=>`<div class="q"><div><b>${ft(e.t)} · ${({craft:'Crafted',admin:'Admin',market:'Market',sold:'Sold',nodupe:'No-Dupe pack',trade:'Trade'})[e.src]||'Pack'}</b><br><small>${(e.c||[]).map(([n,h,tag])=>esc(n)+(h?' (holo)':'')+' · '+esc(tag)).join('<br>')}</small></div></div>`).join(''):'<p class="note">Packs you open show up here with the time.</p>'}
+  $('#hist').innerHTML=S.log.length?S.log.slice(0,30).map(e=>`<div class="q"><div><b>${ft(e.t)} · ${({craft:'Crafted',admin:'Admin',market:'Market',sold:'Sold',nodupe:'No-Dupe pack',trade:'Trade',gift:'Gift'})[e.src]||'Pack'}</b><br><small>${(e.c||[]).map(([n,h,tag])=>esc(n)+(h?' (holo)':'')+' · '+esc(tag)).join('<br>')}</small></div></div>`).join(''):'<p class="note">Packs you open show up here with the time.</p>'}
 
 /* leaderboard */
 let LB=null;
@@ -123,7 +126,7 @@ async function openPack(nd){nd=!!nd;if(busy||(nd?S.nd:S.packs)<1)return;lastNd=n
   $('#rgrid').innerHTML=pulls.map(p=>`<div class="fc" data-act="flip" style="--rc:${RAR[p.c.r].c}" role="button" tabindex="0" aria-label="Flip card"><div class="fc-in"><div class="back${p.c.r>=2?' glow':''}"><img src="face.png" alt=""></div><div class="front">${card(p.c,p.h)}</div></div><span class="tag${p.nw?' new':''}">${esc(p.tag)}</span></div>`).join('');
   $$('#rgrid .tag').forEach(t=>t.style.visibility='hidden');
   refresh().catch(()=>{}).finally(()=>{busy=false;$('#againBtn').disabled=(lastNd?S.nd:S.packs)<1;if(pulls.some(p=>p.c.r>=3))loadFeed()});
-  const best=pulls.slice().sort((a,b)=>(a.full-b.full)||(b.c.r-a.c.r)||(b.h-a.h)||((a.c.p||0)-(b.c.p||0)))[0];
+  const best=pulls.slice().sort((a,b)=>(a.full-b.full)||(RK(b.c)-RK(a.c))||(b.h-a.h)||((a.c.p||0)-(b.c.p||0)))[0];
   const reveal=()=>{$('#rev').hidden=false;const i=pulls.indexOf(best),el=$$('#rgrid .fc')[i];if(el)flip(el)};
   if(spinOn()){$('#rev').hidden=true;runSpin(best,()=>showBanner(best,reveal))}else if(best.c.r>=3){$('#rev').hidden=true;showBanner(best,reveal)}else $('#rev').hidden=false}
 /* big-pull banner for Legendary, Mythic and Honorable Mention */
@@ -247,7 +250,7 @@ function mkCard(L,mine){const c=BY[L.card],price=Math.floor(Number(L.price)),o=S
 function renderMarket(){$('#mkNote').textContent=`You have ${S.shards} shards.`;const all=MK.filter(okListing),mine=all.filter(L=>L.seller===ME.id);
   $('#mkMineCount').textContent=`${mine.length} / ${MAXL}`;$('#mkMine').innerHTML=mine.map(L=>mkCard(L,true)).join('')||'<p class="note">Nothing listed. Press Sell on a card in your Collection.</p>';
   const q=MK_Q.q.toLowerCase();let f=all.filter(L=>L.seller!==ME.id&&(MK_Q.r==='all'||BY[L.card].r==+MK_Q.r)&&(!q||L.card.toLowerCase().includes(q)||String(L.sellerName||'').toLowerCase().includes(q)));
-  f.sort(MK_Q.o==='cheap'?(a,b)=>a.price-b.price:MK_Q.o==='rare'?(a,b)=>(BY[b.card].r-BY[a.card].r)||(BY[a.card].p-BY[b.card].p):(a,b)=>b.t-a.t);
+  f.sort(MK_Q.o==='cheap'?(a,b)=>a.price-b.price:MK_Q.o==='rare'?(a,b)=>(RK(BY[b.card])-RK(BY[a.card]))||(BY[a.card].p-BY[b.card].p):(a,b)=>b.t-a.t);
   $('#mkCount').textContent=`${f.length} listing${f.length===1?'':'s'}`;$('#mkAll').innerHTML=f.slice(0,200).map(L=>mkCard(L,false)).join('')||'<p class="note">Nothing for sale right now.</p>'}
 function sellOpen(n){const c=BY[n],o=S.cards[n]||0;if(!c||!o)return;const h=o===2;SELLN=n;$('#sName').textContent=n+(h?' (holo)':'');$('#sCard').innerHTML=card(c,h);
   $('#sPrice').value=h?RAR[c.r].cr:Math.round(RAR[c.r].cr/2);$('#sHint').textContent=`Crafting this card costs ${RAR[c.r].cr} shards, which is a fair guide for pricing.`;
@@ -325,6 +328,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]
   else if(a==='autoT'){AUTO.on=b.checked;ls('dg-auto',AUTO.on?'1':'0');if(AUTO.on)toast('Auto-open is on: packs open by themselves');render()}
   else if(a==='autoNdT'){AUTO.nd=b.checked;ls('dg-auto-nd',AUTO.nd?'1':'0');render()}
   else if(a==='buyAuto')act('dg_buy_autoopen',{},()=>{AUTO.on=true;ls('dg-auto','1');toast('Auto-open unlocked and switched on!')});
+  else if(a==='noticeOk')closeNotice();
   else if(a==='invCopy')copyText(inviteText()).then(()=>toast('Invite copied. Paste it to a friend!'),()=>toast(`Your invite code: ${S.invite}`));
   else if(a==='finsp')inspect(b.dataset.n,b.dataset.h==='1',!S.cards[b.dataset.n]);
   else if(a==='acct')openAcct();else if(a==='accclose'){if(!S.needs)$('#acc').hidden=true}
@@ -363,7 +367,7 @@ function renderTradeList(){const open=TR.filter(t=>t.status==='open'),done=TR.fi
       ${t.note?`<p class="note">${esc(t.note)}</p>`:''}${t.status!=='open'?'':!out?`<div class="row"><button class="btn lime sm" data-act="tAccept" data-id="${esc(t.id)}">Accept</button><button class="btn ghost sm" data-act="tDecline" data-id="${esc(t.id)}">Decline</button></div>`:`<button class="mini" data-act="tCancel" data-id="${esc(t.id)}">Cancel offer</button>`}</div>`};
   setH($('#tList'),(open.length?open.map(row).join(''):'<p class="note">No offers waiting. Start one on the left.</p>')+(done.length?'<h3 class="th3">History</h3>'+done.map(row).join(''):''))}
 function renderBuilder(){const b=TB;$('#tBuilder').hidden=!b.who;if(!b.who)return;$('#tWhoName').textContent=b.who;
-  const pick=(list,q,sel,act,owner,mineSide)=>{q=q.trim().toLowerCase();const f=list.filter(n=>BY[n]&&!sel.includes(n)&&(!q||n.toLowerCase().includes(q))).sort((x,y)=>(BY[y].r-BY[x].r)||((BY[x].p||0)-(BY[y].p||0)));
+  const pick=(list,q,sel,act,owner,mineSide)=>{q=q.trim().toLowerCase();const f=list.filter(n=>BY[n]&&!sel.includes(n)&&(!q||n.toLowerCase().includes(q))).sort((x,y)=>(RK(BY[y])-RK(BY[x]))||((BY[x].p||0)-(BY[y].p||0)));
     return f.slice(0,40).map(n=>{const h=owner[n]===2,dim=!mineSide&&S.cards[n]&&(S.cards[n]===2||!h);return tChip(n,h,dim?null:act,dim)}).join('')+(f.length>40?`<p class="note">${f.length-40} more. Search to narrow it down.</p>`:'')||'<p class="note">No cards match.</p>'};
   $('#tGivePick').innerHTML=pick(Object.keys(S.cards),$('#tGiveQ').value,b.give,'tAddG',S.cards,true);
   $('#tWantPick').innerHTML=pick(Object.keys(b.their),$('#tWantQ').value,b.want,'tAddW',b.their,false);
@@ -405,7 +409,7 @@ let lastQuick=null,flashT=0;
 async function quickOpen(nd,auto){nd=!!nd;if(busy||(nd?S.nd:S.packs)<1)return false;busy=true;render();
   let res;try{res=await rpc('dg_open_pack',{p_nodupe:nd})}catch(e){busy=false;toast(errText(e));render();return false}
   const pulls=res.map(p=>({c:BY[p.n]||{n:p.n,p:0,r:0},h:!!p.h,tag:p.tag,nw:!!p.nw,full:!!p.full}));
-  const best=pulls.slice().sort((a,b)=>(a.full-b.full)||(b.c.r-a.c.r)||(b.h-a.h)||((a.c.p||0)-(b.c.p||0)))[0];
+  const best=pulls.slice().sort((a,b)=>(a.full-b.full)||(RK(b.c)-RK(a.c))||(b.h-a.h)||((a.c.p||0)-(b.c.p||0)))[0];
   lastQuick={pulls,best,nd,auto:!!auto};
   const big=best.c.r>=3&&!best.full,label=(best.h?'Holo ':'')+rarName(best.c);
   if(big&&MINI){flashT=Date.now();const f=$('#mFlash');f.style.setProperty('--rc',RAR[best.c.r].c);f.innerHTML=`<b>${esc(label)} pull!</b><span>${best.c.hm?'':'#'+best.c.p+' '}${esc(best.c.n)}</span>`;f.hidden=false}
@@ -425,6 +429,15 @@ function renderMini(){if(!MINI||!S)return;
   const q=lastQuick;setH($('#mLast'),q?`<p class="mlab">${q.auto?'Auto-opened':'Last'} ${q.nd?'No-Dupe pack':'pack'} · ${q.pulls.filter(p=>p.nw).length} new</p><div class="mgrid">${q.pulls.map(mcard).join('')}</div><p class="mbest" style="color:${RAR[q.best.c.r].c}">${esc((q.best.h?'Holo ':'')+rarName(q.best.c))} · ${esc(q.best.c.n)}</p>`:'<p class="mnote">Open a pack and your cards show up here.</p>');
   const f=(FEED.feed||[]).find(x=>BY[x.n]);setH($('#mFeed'),f?`<span class="mlab">Latest rare pull</span> <b>${esc(f.u)}</b> · <span style="color:${RAR[BY[f.n].r].c}">${BY[f.n].hm?'':'#'+BY[f.n].p+' '}${esc(f.n)}</span> · ${ago(f.t)}`:'')}
 setInterval(()=>{if(MINI&&S){renderMini();if(Date.now()-feedAt>30000)loadFeed()}},1000);
+
+/* ---------- notices: shown once per device to the players they apply to ---------- */
+/* IME was lowered under APEX on 24 Nov 2026; everyone who had it by then got 1,000 shards */
+const IME_CUT=Date.parse('2026-11-25T02:40:00Z');
+const NOTICES=[{id:'ime-lowered',show:()=>!!S.cards['IT MEANS EVERYTHING']&&(S.when['IT MEANS EVERYTHING']||0)<IME_CUT,title:'Im Sorry :(',body:'IT MEANS EVERYTHING has been lowered under APEX (GRIEF)',note:'It was an accident for IME to be above GRIEF.',extra:'+1,000 shards as a sorry',card:'IT MEANS EVERYTHING'}];
+function showNotices(){if(!S||!$('#notice').hidden)return;const n=NOTICES.find(x=>!ls('dg-notice-'+x.id)&&x.show());if(!n)return;
+  $('#nTitle').textContent=n.title;$('#nBody').textContent=n.body;$('#nExtra').textContent=n.extra||'';$('#nExtra').hidden=!n.extra;$('#nNote').textContent=n.note||'';$('#nNote').hidden=!n.note;$('#nCard').innerHTML=n.card&&BY[n.card]?card(BY[n.card],S.cards[n.card]===2):'';$('#notice').dataset.id=n.id;$('#notice').hidden=false}
+function closeNotice(){const b=$('#notice');if(b.hidden)return;ls('dg-notice-'+b.dataset.id,'1');b.hidden=true;setTimeout(showNotices,300)}
+setInterval(()=>{if(S&&!busy&&['rev','spin','banner','insp'].every(id=>$('#'+id).hidden))showNotices()},2000);
 
 /* ---------- automatic updates ----------
    The game lives online (GAME_URL). The PC and Android apps open that copy, so a new version reaches everyone
