@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<meta name="dg-version" content="3e1af20c33f1">
+<meta name="dg-version" content="4864a215055e">
 <title>Demon Gacha</title>
 <style>
 @font-face{font-family:"Lilita One";src:url(fonts/lilita-one-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -235,6 +235,12 @@ tr.me td{background:#24380f}
 .notice-note{font-size:15px;color:var(--mute);margin:-8px 0 16px!important}
 .notice-extra{font:22px "Lilita One",sans-serif;color:var(--lime);margin:-6px 0 18px!important}
 .notice-card{width:150px;margin:0 auto}.notice-card:empty{display:none}
+/* announcements */
+.annband{padding-top:14px;padding-bottom:0}.annband[hidden]{display:none}
+.ann{border:1px solid color-mix(in srgb,var(--lime) 45%,var(--line));border-left:4px solid var(--lime);border-radius:12px;background:var(--panel);padding:10px 14px;margin-bottom:8px}
+.ann-t{display:flex;align-items:center;gap:8px;margin:0;color:var(--lime)}.ann-t b{color:var(--ink);font:18px "Lilita One",sans-serif}.ann-t small{margin-left:auto;color:var(--mute);white-space:nowrap}
+.ann-b{margin:6px 0 0;white-space:pre-line}
+#nBody{white-space:pre-line}#annBody{font:16px Rubik,sans-serif;min-height:90px}.notice.isann .notice-in{border-color:var(--lime)}
 /* owner inventory */
 .invlist{max-height:460px;overflow:auto}
 .invrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
@@ -353,6 +359,7 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
 
 <main>
 <section id="v-home" class="view">
+  <div class="band annband" id="annBox" hidden></div>
   <div class="hero band"><div class="wrap">
     <div>
       <p class="lbl">Packs ready</p>
@@ -499,6 +506,13 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
       <div class="row"><input id="aPw" type="text" autocomplete="off" placeholder="6 or more characters" style="flex:1"><button class="btn ghost" data-act="aSetPw">Set password</button></div>
       <div class="row" style="margin-top:16px"><button class="btn ghost" data-act="aClr" id="aClrBtn">Clear username</button><button class="btn ghost" data-act="aReset" id="aResetBtn">Reset this account</button></div>
       <p class="note" id="aMsg" aria-live="polite"></p></div>
+    <div class="panel" id="annAdmin" hidden><h2>Announcements</h2>
+      <p class="note">Only you can post these. Everyone gets a pop-up once, and it stays at the top of Home until you remove it.</p>
+      <label for="annTitle">Title</label><input id="annTitle" maxlength="80" placeholder="e.g. New update!" style="width:100%">
+      <label for="annBody">Message</label><textarea id="annBody" maxlength="1000" placeholder="What do you want to tell everyone?"></textarea>
+      <div class="row" style="margin-top:10px"><button class="btn lime" data-act="annSend">Send to everyone</button></div>
+      <p class="note" id="annMsg" aria-live="polite"></p>
+      <div id="annList"></div></div>
     <div class="panel" id="invBox" hidden><h2>Inventory</h2>
       <p class="note">Only you can see this. Every card the picked player owns; change holo, remove cards, or add any card.</p>
       <p id="invHead"></p>
@@ -581,8 +595,8 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
 <div id="toasts" aria-live="polite"></div>
 
 
-<script src="config.js?v=3e1af20c33f1"></script>
-<script src="vendor/supabase.js?v=3e1af20c33f1"></script>
-<script src="game.js?v=3e1af20c33f1"></script>
+<script src="config.js?v=4864a215055e"></script>
+<script src="vendor/supabase.js?v=4864a215055e"></script>
+<script src="game.js?v=4864a215055e"></script>
 </body>
 </html>

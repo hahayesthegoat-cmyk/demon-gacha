@@ -283,7 +283,7 @@ function renderPlayers(){const q=$('#pq').value.trim().toLowerCase();$('#plist')
 async function loadFilter(){try{const f=await rpc('dg_admin_get_filter');$('#fAny').value=(f.any||[]).join('\n');$('#fWord').value=(f.word||[]).join('\n')}catch(e){}}
 async function checkNames(){try{const bad=await rpc('dg_admin_bad_names');$('#fBad').innerHTML=(bad||[]).map(r=>`<div class="q"><div><b>${esc(r.username)}</b></div><button class="mini" data-act="aClrId" data-id="${esc(r.id)}">Clear name</button></div>`).join('')||'<p class="note">None. Every current username passes.</p>'}catch(e){$('#fBad').innerHTML='<p class="note">Could not check names right now.</p>'}}
 let adminLoaded=false;
-function renderAdmin(){if(!adminLoaded){adminLoaded=true;loadPlayers();loadFilter();checkNames();loadCodes();loadSync()}renderPlayers();renderInv()}
+function renderAdmin(){if(!adminLoaded){adminLoaded=true;loadPlayers();loadFilter();checkNames();loadCodes();loadSync()}renderPlayers();renderInv();$('#annAdmin').hidden=!S.owner;renderAnn()}
 /* owner only: see and edit the picked player's cards */
 let INV={id:null};
 async function loadInv(){if(!S.owner||!SEL){INV={id:null};renderInv();return}const id=SEL.id;
@@ -338,6 +338,9 @@ const ADMIN={
   invAdd(){const n=$('#invCard').value.trim(),h=$('#invHoloNew').checked;if(!n)return $('#invMsg').textContent='Type a card name first.';
     if(INV.cards[n]&&(INV.cards[n]===2||!h))return $('#invMsg').textContent=`${INV.u} already has ${n}.`;
     invEdit(n,h,false,`Gave ${n}${h?' (holo)':''} to ${INV.u}.`).then(()=>{$('#invCard').value=''})},
+  async annSend(b){const t=$('#annTitle').value.trim(),body=$('#annBody').value.trim(),m=$('#annMsg');if(!t){m.textContent='Give it a title first.';return}
+    b.disabled=true;try{const id=await rpc('dg_owner_announce',{p_title:t,p_body:body});ls('dg-notice-ann-'+id,'1');$('#annTitle').value='';$('#annBody').value='';m.textContent='Sent! Everyone sees it within a minute.';await loadAnn()}catch(e){m.textContent=errText(e)}b.disabled=false},
+  annEnd(b){arm(b,'annend'+b.dataset.id,()=>rpc('dg_owner_end_announcement',{p_id:+b.dataset.id}).then(()=>{$('#annMsg').textContent='Announcement removed.';loadAnn()}).catch(e=>{$('#annMsg').textContent=errText(e)}))},
   aFilter(){const a=words($('#fAny').value),w=words($('#fWord').value);rpc('dg_admin_set_filter',{p_any:a,p_word:w}).then(()=>{$('#fMsg').textContent=`Saved: ${a.length} anywhere, ${w.length} whole-word.`;checkNames()}).catch(e=>{$('#fMsg').textContent=errText(e)})}};
 
 /* ---------- clicks ---------- */
@@ -469,8 +472,17 @@ setInterval(()=>{if(MINI&&S){renderMini();if(Date.now()-feedAt>30000)loadFeed()}
 /* IME was lowered under APEX on 24 Nov 2026; everyone who had it by then got 1,000 shards */
 const IME_CUT=Date.parse('2026-11-25T02:40:00Z');
 const NOTICES=[{id:'ime-lowered',show:()=>!!S.cards['IT MEANS EVERYTHING']&&(S.when['IT MEANS EVERYTHING']||0)<IME_CUT,title:'Im Sorry :(',body:'IT MEANS EVERYTHING has been lowered under APEX (GRIEF)',note:'It was an accident for IME to be above GRIEF.',extra:'+1,000 shards as a sorry',card:'IT MEANS EVERYTHING'}];
-function showNotices(){if(!S||!$('#notice').hidden)return;const n=NOTICES.find(x=>!ls('dg-notice-'+x.id)&&x.show());if(!n)return;
-  $('#nTitle').textContent=n.title;$('#nBody').textContent=n.body;$('#nExtra').textContent=n.extra||'';$('#nExtra').hidden=!n.extra;$('#nNote').textContent=n.note||'';$('#nNote').hidden=!n.note;$('#nCard').innerHTML=n.card&&BY[n.card]?card(BY[n.card],S.cards[n.card]===2):'';$('#notice').dataset.id=n.id;$('#notice').hidden=false}
+/* ---------- announcements: the owner posts, everyone gets a pop-up once and sees it on Home ---------- */
+let ANN=[],annAt=0;
+async function loadAnn(){annAt=Date.now();try{const {data}=await SB.from('announcements').select('id,title,body,created_at').order('id',{ascending:false}).limit(5);ANN=data||[]}catch(e){}renderAnn()}
+function renderAnn(){if(!S)return;const box=$('#annBox');box.hidden=!ANN.length;
+  setH(box,`<div class="wrap">${ANN.map(a=>`<div class="ann"><p class="ann-t"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 10v4h3l6 4V6L6 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" fill="currentColor"/></svg><b>${esc(a.title)}</b><small>${ago(Date.parse(a.created_at))}</small></p>${a.body?`<p class="ann-b">${esc(a.body)}</p>`:''}</div>`).join('')}</div>`);
+  if(S.owner)setH($('#annList'),ANN.length?'<label>Showing now</label>'+ANN.map(a=>`<div class="q"><div><b>${esc(a.title)}</b><br><small>${ago(Date.parse(a.created_at))}</small></div><button class="mini" data-act="annEnd" data-id="${a.id}">Remove</button></div>`).join(''):'<p class="note">No announcements showing.</p>')}
+setInterval(()=>{if(S&&Date.now()-annAt>60000)loadAnn()},5000);
+function showNotices(){if(!S||!$('#notice').hidden)return;
+  const a=ANN.slice().reverse().find(x=>!ls('dg-notice-ann-'+x.id));
+  const n=NOTICES.find(x=>!ls('dg-notice-'+x.id)&&x.show())||(a&&{id:'ann-'+a.id,title:a.title,body:a.body,ann:true});if(!n)return;
+  $('#nTitle').textContent=n.title;$('#nBody').textContent=n.body;$('#nExtra').textContent=n.extra||'';$('#nExtra').hidden=!n.extra;$('#nNote').textContent=n.note||'';$('#nNote').hidden=!n.note;$('#nCard').innerHTML=n.card&&BY[n.card]?card(BY[n.card],S.cards[n.card]===2):'';$('#notice').dataset.id=n.id;$('#notice').classList.toggle('isann',!!n.ann);$('#notice').hidden=false}
 function closeNotice(){const b=$('#notice');if(b.hidden)return;ls('dg-notice-'+b.dataset.id,'1');b.hidden=true;setTimeout(showNotices,300)}
 setInterval(()=>{if(S&&!busy&&['rev','spin','banner','insp'].every(id=>$('#'+id).hidden))showNotices()},2000);
 
@@ -495,7 +507,7 @@ setTimeout(checkUpdate,8000);setInterval(checkUpdate,4*60*1000);setInterval(appl
 async function ensureGuest(){const {data}=await SB.auth.getSession();if(data.session)return;const {error}=await SB.auth.signInAnonymously();if(error)throw new Error(/anonymous/i.test(error.message)?'Anonymous sign-ins are turned off in Supabase. Turn them on under Authentication, then Sign In / Providers.':error.message)}
 async function enterGame(){applyState(await rpc('dg_state'));await loadDefs();
   try{const {data}=await SB.from('profiles').select('id').eq('is_owner',true).limit(1);OWNER_ID=data&&data[0]?data[0].id:null}catch(e){}
-  gate(null);route();if(S.needs)openAcct('An admin reset your username. Pick a new one to keep playing.')}
+  gate(null);route();loadAnn();if(S.needs)openAcct('An admin reset your username. Pick a new one to keep playing.')}
 let mode='in';
 $$('.tab').forEach(t=>t.addEventListener('click',()=>{mode=t.dataset.mode;$$('.tab').forEach(x=>x.classList.toggle('on',x===t));$('#lp2wrap').hidden=mode!=='up';$('#loginBtn').textContent=mode==='up'?'Create account':'Log in';$('#lp').autocomplete=mode==='up'?'new-password':'current-password';$('#loginMsg').textContent=''}));
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const u=$('#lu').value.trim().replace(/\s+/g,' '),p=$('#lp').value,m=$('#loginMsg'),btn=$('#loginBtn');
