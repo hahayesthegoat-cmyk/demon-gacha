@@ -27,18 +27,21 @@ async function act(fn,args,ok){try{const d=await rpc(fn,args);if(ok)ok(d);await 
 
 /* ---------- cards ---------- */
 const SEC=p=>p<=75?['main','Main','Main list: AREDL #1–75']:p<=150?['ext','Extended','Extended list: AREDL #76–150']:['leg','Legacy','Legacy: AREDL #151 and below'];
-const BADGE=c=>c.r===7?['top5','Top 5','Unrated extreme · would be top 5 if rated']:c.hm?['sbe','SBE','Should Be Extreme']:SEC(c.p);
-function card(c,h,miss){const R=RAR[c.r],sc=BADGE(c);return `<div class="card${c.r===6?' apex':c.r===7?' ime':''}${h?' holo':''}${miss?' miss':''}" style="--rc:${R.c}" data-n="${esc(c.n)}" data-h="${h?1:0}"><span class="pos"${EGG[c.n]?` title="${esc(EGG[c.n])}"`:''}>${c.hm?esc(c.rate||'Unranked'):'#'+c.p}</span><span class="rr">${R.k}</span><img class="df" src="face.png" alt="" style="--tint:${TINT[c.r]}">${sc?`<span class="lt ${sc[0]}" title="${sc[2]}">${sc[1]}</span>`:''}<b class="nm">${esc(c.n)}</b></div>`}
+const GONE=c=>c.hm&&c.rate==='Removed from AREDL';
+const BADGE=c=>c.r===7?['top5','Top 5','Unrated extreme · would be top 5 if rated']:GONE(c)?['leg','Removed','No longer on the AREDL list']:c.hm?['sbe','SBE','Should Be Extreme']:SEC(c.p);
+function card(c,h,miss){const R=RAR[c.r],sc=BADGE(c);return `<div class="card${c.r===6?' apex':c.r===7?' ime':''}${h?' holo':''}${miss?' miss':''}" style="--rc:${R.c}" data-n="${esc(c.n)}" data-h="${h?1:0}"><span class="pos"${EGG[c.n]?` title="${esc(EGG[c.n])}"`:''}>${c.hm?esc(GONE(c)?'Removed':c.rate||'Unranked'):'#'+c.p}</span><span class="rr">${R.k}</span><img class="df" src="face.png" alt="" style="--tint:${TINT[c.r]}">${sc?`<span class="lt ${sc[0]}" title="${sc[2]}">${sc[1]}</span>`:''}<b class="nm">${esc(c.n)}</b></div>`}
 function rollR(){if(Math.random()<.001&&TIER[6].length)return 6;const x=Math.random()*100;let r=x<1?4:x<5?3:x<15?2:x<40?1:0;while(!TIER[r].length)r--;return r}
-async function loadDefs(){let all=[];for(let from=0;;from+=1000){const {data,error}=await SB.from('card_defs').select('name,pos,rarity,hm,rate').order('pos',{ascending:true,nullsFirst:true}).range(from,from+999);if(error)throw new Error(error.message);all=all.concat(data);if(data.length<1000)break}
+async function loadDefs(){defsAt=Date.now();let all=[];for(let from=0;;from+=1000){const {data,error}=await SB.from('card_defs').select('name,pos,rarity,hm,rate').order('pos',{ascending:true,nullsFirst:true}).range(from,from+999);if(error)throw new Error(error.message);all=all.concat(data);if(data.length<1000)break}
   LIST=[];HMS=[];BY={};TIER=[[],[],[],[],[],[],[],[]];
   for(const d of all){const c={n:d.name,p:d.pos||0,r:d.rarity,hm:d.hm,rate:d.rate};BY[c.n]=c;if(c.hm)HMS.push(c);else{LIST.push(c);TIER[c.r].push(c)}}
   LIST.sort((a,b)=>a.p-b.p);$('#allNames').innerHTML=HMS.concat(LIST).map(c=>`<option value="${esc(c.n)}">`).join('')}
 const uniq=()=>LIST.reduce((a,c)=>a+(S.cards[c.n]?1:0),0),holos=()=>LIST.reduce((a,c)=>a+(S.cards[c.n]===2?1:0),0);
 
 /* ---------- state from the server ---------- */
+let defsAt=0;
 function applyState(st){const paidBefore=S&&S.invites?S.invites.filter(f=>f.paid).length:null,tinBefore=S?S.tin:null;ME=st.me;S={packs:ME.packs,shards:ME.shards,opened:ME.opened,streak:ME.streak,last:ME.last_login,day:st.today,daily:{run:ME.daily_run,hl:ME.daily_hl},quests:ME.quests||[],ms:ME.ms||{},got:ME.got||{},best:{run:ME.best_run||0,hl:ME.best_hl||0},att:ME.attempts||0,name:ME.username,cards:st.cards||{},when:st.when||{},log:st.log||[],pulls:ME.pulls||{},nd:ME.nd_packs||0,auto:!!ME.auto_open,invite:ME.invite_code||'',invites:st.invites||[],invitedBy:st.invited_by||null,tin:+st.trades_in||0,owner:!!ME.is_owner,admin:!!(ME.is_owner||ME.is_admin),needs:!!ME.needs_name};
   nextAt=st.next_pack_ms==null?null:Date.now()+Number(st.next_pack_ms);
+  if(LIST.length&&(Date.now()-defsAt>30*60*1000||Object.keys(S.cards).some(n=>!BY[n]))){defsAt=Date.now();loadDefs().then(()=>{if(S)render()}).catch(()=>{})}
   if(tinBefore!=null&&S.tin>tinBefore){toast('New trade offer! Open the Trades tab to answer it.');if(cur==='trades')loadTrades()}
   if(paidBefore!=null){const now=S.invites.filter(f=>f.paid);if(now.length>paidBefore)now.slice(paidBefore).forEach(f=>toast(`+5 packs · ${f.u} opened 10 packs with your invite`))}}
 let refreshing=null;
@@ -102,7 +105,7 @@ function renderEarn(){$('#today').textContent=`Today: ${S.daily.run} / ${RUN_CAP
   $('#shop').innerHTML=`<p>Duplicates from normal packs turn into shards: Commons give 5, Mythics 150, holos double. <b>No-Dupe packs</b> only give cards you don't have yet, and each new card also gives half those shards.</p><p style="font:40px/1 'Lilita One'">${S.shards} <small style="font:16px Rubik;color:var(--mute)">shards</small></p><div class="row"><button class="btn lime" data-act="buy"${S.shards<SHOP?' disabled':''}>Buy 1 pack · ${SHOP}</button><button class="btn lime nd" data-act="buyNd"${S.shards<300?' disabled':''}>Buy 1 No-Dupe pack · 300</button>${S.auto?'':`<button class="btn lime" data-act="buyAuto"${S.shards<1000?' disabled':''}>Unlock auto-open · 1,000</button>`}<a class="btn ghost" href="#collection" style="text-decoration:none;display:inline-flex;align-items:center">Craft a card</a></div>`;
   renderMS()}
 const COL={q:'',r:'all',s:'all',l:'all',lim:120};
-function renderCol(){const u=uniq(),N=LIST.length;$('#colHead').textContent=`${u} of ${N} demons · ${HMS.filter(c=>S.cards[c.n]).length} of ${HMS.length} special cards · ${holos()} holo · ${S.shards} shards to craft with`;$('#colBar').style.width=u/N*100+'%';
+function renderCol(){const u=uniq(),N=LIST.length;$('#colHead').textContent=`${u} of ${N} demons · ${HMS.filter(c=>c.r>=5&&S.cards[c.n]).length} of ${HMS.filter(c=>c.r>=5).length} special cards · ${holos()} holo · ${S.shards} shards to craft with`;$('#colBar').style.width=u/N*100+'%';
   const q=COL.q.toLowerCase(),f=HMS.concat(LIST).filter(c=>{const o=S.cards[c.n]||0;return(COL.r==='all'||c.r==+COL.r)&&(COL.l==='all'||(c.hm?COL.l==='sbe':SEC(c.p)[0]===COL.l))&&(!q||c.n.toLowerCase().includes(q))&&(COL.s==='all'||(COL.s==='own'&&o)||(COL.s==='miss'&&!o)||(COL.s==='holo'&&o===2))});
   $('#grid').innerHTML=f.slice(0,COL.lim).map(c=>{const o=S.cards[c.n]||0,cost=RAR[c.r].cr;return `<div class="cell">${card(c,o===2,!o)}${o?(S.when[c.n]?`<small class="note" style="margin:0">Got ${ft(S.when[c.n])}</small>`:'')+`<button class="mini" data-act="sell" data-n="${esc(c.n)}">Sell</button>`:`<button class="mini" data-act="craft" data-n="${esc(c.n)}"${S.shards<cost?' disabled':''}>Craft · ${cost} shards</button>`}</div>`}).join('')||'<p class="note">No demons match.</p>';
   $('#moreBtn').hidden=f.length<=COL.lim;
@@ -219,9 +222,9 @@ document.addEventListener('pointerleave',()=>{if(tiltEl){tiltEl.style.transform=
 /* inspector: double-click a card, drag to rotate */
 const IR={rx:-6,ry:-18,vx:0,vy:0,drag:false,lx:0,ly:0,raf:0};
 function applyI(){const ic=$('#icard');ic.style.transform=`rotateX(${IR.rx}deg) rotateY(${IR.ry}deg)`;const g=$('#ifront .glare');if(g)g.style.background=`linear-gradient(${110+IR.ry*1.2}deg,transparent 25%,#ffffff70 ${48+IR.rx/3}%,transparent 72%)`}
-function inspect(n,h,miss){const c=BY[n];if(!c)return;const R=RAR[c.r],o=S.cards[n]||0,sc=c.r===7?['','Top 5 (unrated extreme)']:c.hm?['','SBE (Should Be Extreme)']:SEC(c.p);
+function inspect(n,h,miss){const c=BY[n];if(!c)return;const R=RAR[c.r],o=S.cards[n]||0,sc=c.r===7?['','Top 5 (unrated extreme)']:GONE(c)?['','Removed from the list']:c.hm?['','SBE (Should Be Extreme)']:SEC(c.p);
   $('#icard').style.setProperty('--rc',R.c);$('#ifront').innerHTML=card(c,h,miss)+'<div class="glare"></div>';
-  $('#iback').style.setProperty('--rc',R.c);$('#iback').innerHTML=`<img src="face.png" alt=""><h3>${esc(n)}</h3><dl><dt>Position</dt><dd>${c.r===7?'Unrated extreme (not on AREDL yet)':c.hm?c.rate+' (in-game rating)':'#'+c.p+' on AREDL'}</dd><dt>Rarity</dt><dd style="color:${R.c}">${h?'Holo ':''}${R.k==='HM'?'Honorable Mention':R.k}</dd><dt>Section</dt><dd>${sc[1]}</dd><dt>${o?'Got':'Status'}</dt><dd>${o?(S.when[n]?ft(S.when[n]):'Before timestamps'):'Not in your collection'}</dd><dt>Crafting</dt><dd>${R.cr} shards</dd></dl>`;
+  $('#iback').style.setProperty('--rc',R.c);$('#iback').innerHTML=`<img src="face.png" alt=""><h3>${esc(n)}</h3><dl><dt>Position</dt><dd>${c.r===7?'Unrated extreme (not on AREDL yet)':GONE(c)?'Removed from AREDL (no longer ranked)':c.hm?c.rate+' (in-game rating)':'#'+c.p+' on AREDL'}</dd><dt>Rarity</dt><dd style="color:${R.c}">${h?'Holo ':''}${R.k==='HM'?'Honorable Mention':R.k}</dd><dt>Section</dt><dd>${sc[1]}</dd><dt>${o?'Got':'Status'}</dt><dd>${o?(S.when[n]?ft(S.when[n]):'Before timestamps'):'Not in your collection'}</dd><dt>Crafting</dt><dd>${R.cr} shards</dd></dl>`;
   Object.assign(IR,{rx:-6,ry:-18,vx:0,vy:0});$('#icard').classList.remove('anim');applyI();$('#insp').hidden=false;
   cancelAnimationFrame(IR.raf);let t0=performance.now();const intro=now=>{const k=Math.min(1,(now-t0)/700);IR.ry=-18+18*(1-Math.pow(1-k,3));applyI();if(k<1&&!IR.drag)IR.raf=requestAnimationFrame(intro)};IR.raf=requestAnimationFrame(intro)}
 function closeInsp(){$('#insp').hidden=true;cancelAnimationFrame(IR.raf)}
@@ -280,7 +283,13 @@ function renderPlayers(){const q=$('#pq').value.trim().toLowerCase();$('#plist')
 async function loadFilter(){try{const f=await rpc('dg_admin_get_filter');$('#fAny').value=(f.any||[]).join('\n');$('#fWord').value=(f.word||[]).join('\n')}catch(e){}}
 async function checkNames(){try{const bad=await rpc('dg_admin_bad_names');$('#fBad').innerHTML=(bad||[]).map(r=>`<div class="q"><div><b>${esc(r.username)}</b></div><button class="mini" data-act="aClrId" data-id="${esc(r.id)}">Clear name</button></div>`).join('')||'<p class="note">None. Every current username passes.</p>'}catch(e){$('#fBad').innerHTML='<p class="note">Could not check names right now.</p>'}}
 let adminLoaded=false;
-function renderAdmin(){if(!adminLoaded){adminLoaded=true;loadPlayers();loadFilter();checkNames();loadCodes()}renderPlayers()}
+function renderAdmin(){if(!adminLoaded){adminLoaded=true;loadPlayers();loadFilter();checkNames();loadCodes();loadSync()}renderPlayers()}
+/* card list sync with AREDL: runs every hour on the server; this shows the last result */
+const syncText=v=>{if(!v)return 'Not synced yet. The first automatic check runs at the top of the next hour.';
+  if(v.err)return `Last check ${v.t?ago(v.t):''}: ${v.err}`;
+  const ch=[v.added&&v.added.length?`added ${v.added.join(', ')}`:'',v.removed&&v.removed.length?`removed ${v.removed.join(', ')}`:'',v.back&&v.back.length?`back on the list: ${v.back.join(', ')}`:'',v.renamed&&v.renamed.length?`renamed: ${v.renamed.join(', ')}`:'',v.moved?`${v.moved} moved`:''].filter(Boolean);
+  return `Last synced ${v.t?ago(v.t):''} · ${v.n} demons on AREDL · ${ch.length?ch.join(' · '):'no changes'}`};
+async function loadSync(){try{const {data}=await SB.from('settings').select('value').eq('key','aredl_sync').limit(1);$('#syncInfo').textContent=syncText(data&&data[0]&&data[0].value)}catch(e){$('#syncInfo').textContent='Could not load the sync status.'}}
 async function loadCodes(){let L;try{L=await rpc('dg_admin_codes')||[]}catch(e){$('#cList').innerHTML='<p class="note">Could not load codes right now.</p>';return}
   $('#cList').innerHTML=L.map(c=>{const gift=[c.packs?`${c.packs} pack${c.packs>1?'s':''}`:'',c.shards?`${c.shards} shards`:''].filter(Boolean).join(' + '),old=c.exp&&c.exp<Date.now(),full=c.max!=null&&c.uses>=c.max;
     return `<div class="q"><div><b class="code">${esc(c.code)}</b>${old?' <span class="hb off">Expired</span>':full?' <span class="hb off">Used up</span>':''}<br><small>${gift} · used ${c.uses}${c.max!=null?' / '+c.max:''} time${(c.max!=null?c.max:c.uses)===1?'':'s'} · ${c.exp?(old?'expired ':'expires ')+ft(c.exp):'never expires'}</small></div><div class="row" style="flex-wrap:nowrap"><button class="mini" data-act="aCopy" data-c="${esc(c.code)}">Copy</button><button class="mini" data-act="aDelCode" data-c="${esc(c.code)}">Delete</button></div></div>`}).join('')||'<p class="note">No codes yet.</p>'}
@@ -307,6 +316,9 @@ const ADMIN={
   aMkAdmin(){const v=$('#admName').value.trim(),m=$('#admMsg');if(!v){m.textContent='Type a username first.';return}
     rpc('dg_owner_set_admin',{p_username:v,p_admin:true}).then(n=>{m.textContent=`${n} is now an admin. They'll see the Admin tab next time their app refreshes.`;$('#admName').value='';loadPlayers()}).catch(e=>{m.textContent=errText(e)})},
   aRmAdmin(b){const u=b.dataset.u;arm(b,'rmadm'+u,()=>rpc('dg_owner_set_admin',{p_username:u,p_admin:false}).then(n=>{$('#admMsg').textContent=`${n} is no longer an admin.`;loadPlayers()}).catch(e=>{$('#admMsg').textContent=errText(e)}))},
+  async aSync(b){b.disabled=true;$('#syncInfo').textContent='Asking AREDL for the latest list…';
+    try{await rpc('dg_admin_aredl_request');let r=null;for(let i=0;i<8;i++){await new Promise(z=>setTimeout(z,5000));r=await rpc('dg_admin_aredl_collect');if(!r||!r.wait)break}
+      $('#syncInfo').textContent=r&&r.wait?'AREDL is slow to answer. The hourly check will pick it up.':syncText(r);if(r&&r.ok){await loadDefs();render()}}catch(e){$('#syncInfo').textContent=errText(e)}b.disabled=false},
   aFilter(){const a=words($('#fAny').value),w=words($('#fWord').value);rpc('dg_admin_set_filter',{p_any:a,p_word:w}).then(()=>{$('#fMsg').textContent=`Saved: ${a.length} anywhere, ${w.length} whole-word.`;checkNames()}).catch(e=>{$('#fMsg').textContent=errText(e)})}};
 
 /* ---------- clicks ---------- */

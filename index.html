@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<meta name="dg-version" content="829b64db5861">
+<meta name="dg-version" content="793a1c6c8808">
 <title>Demon Gacha</title>
 <style>
 @font-face{font-family:"Lilita One";src:url(fonts/lilita-one-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -495,6 +495,10 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
       <div class="row"><input id="aPw" type="text" autocomplete="off" placeholder="6 or more characters" style="flex:1"><button class="btn ghost" data-act="aSetPw">Set password</button></div>
       <div class="row" style="margin-top:16px"><button class="btn ghost" data-act="aClr" id="aClrBtn">Clear username</button><button class="btn ghost" data-act="aReset" id="aResetBtn">Reset this account</button></div>
       <p class="note" id="aMsg" aria-live="polite"></p></div>
+    <div class="panel"><h2>Card list</h2>
+      <p class="note">The cards follow the AREDL list by themselves: every hour the server adds new demons, updates positions and rarities, and marks levels that leave the list as "Removed" (players keep them).</p>
+      <p id="syncInfo" aria-live="polite"></p>
+      <button class="btn ghost sm" data-act="aSync">Check AREDL now</button></div>
     <div class="panel" id="ownerBox" hidden><h2>Admins</h2>
       <p class="note">Admins get this Admin tab: they can give packs, cards and shards, reset accounts, set passwords and make codes. Only you, the owner, can add or remove admins.</p>
       <label for="admName">Username</label>
@@ -564,8 +568,8 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
 <div id="toasts" aria-live="polite"></div>
 
 
-<script src="config.js?v=829b64db5861"></script>
-<script src="vendor/supabase.js?v=829b64db5861"></script>
-<script src="game.js?v=829b64db5861"></script>
+<script src="config.js?v=793a1c6c8808"></script>
+<script src="vendor/supabase.js?v=793a1c6c8808"></script>
+<script src="game.js?v=793a1c6c8808"></script>
 </body>
 </html>
