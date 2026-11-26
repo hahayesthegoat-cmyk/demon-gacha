@@ -16,7 +16,7 @@ const ft=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'num
 new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true});
 
 /* ---------- connection ---------- */
-let SB=null,ME=null,S=null,nextAt=null,LIST=[],HMS=[],BY={},TIER=[[],[],[],[],[],[],[],[]],OWNER_ID=null,cur='home',busy=false;
+let SB=null,ME=null,S=null,nextAt=null,LIST=[],HMS=[],BY={},TIER=[[],[],[],[],[],[],[],[]],OWNER_ID=null,cur='home',busy=false,HOLO_ON=false;
 function readCfg(){const c=window.DG_CONFIG||{};let url=c.url||'',key=c.anonKey||'';if(!url||!key){try{const o=JSON.parse(localStorage.getItem('dg-cfg')||'null');if(o){url=o.url;key=o.key}}catch(e){}}return{url,key}}
 function gate(id){['boot','setup','login'].forEach(g=>{$('#'+g).hidden=g!==id})}
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;$('#toasts').append(t);setTimeout(()=>t.remove(),3400)}
@@ -35,7 +35,7 @@ async function loadDefs(){defsAt=Date.now();let all=[];for(let from=0;;from+=100
   LIST=[];HMS=[];BY={};TIER=[[],[],[],[],[],[],[],[]];
   for(const d of all){const c={n:d.name,p:d.pos||0,r:d.rarity,hm:d.hm,rate:d.rate};BY[c.n]=c;if(c.hm)HMS.push(c);else{LIST.push(c);TIER[c.r].push(c)}}
   LIST.sort((a,b)=>a.p-b.p);$('#allNames').innerHTML=HMS.concat(LIST).map(c=>`<option value="${esc(c.n)}">`).join('')}
-const uniq=()=>LIST.reduce((a,c)=>a+(S.cards[c.n]?1:0),0),holos=()=>LIST.reduce((a,c)=>a+(S.cards[c.n]===2?1:0),0);
+const uniq=()=>LIST.reduce((a,c)=>a+(S.cards[c.n]?1:0),0),HOLOPK=()=>HOLO_ON&&LIST.length>0&&LIST.every(c=>S.cards[c.n]),holos=()=>LIST.reduce((a,c)=>a+(S.cards[c.n]===2?1:0),0);
 
 /* ---------- state from the server ---------- */
 let defsAt=0;
@@ -89,7 +89,7 @@ function renderLuck(){const b=$('#luckBox'),L=luckOf(S.pulls);if(!L||L.n<5){setH
     return `<tr><td>${t}</td><td class="n">${got}</td><td class="n">${e<10?e.toFixed(1):Math.round(e)}</td><td class="n" style="color:${got>=e?'var(--lime)':'var(--mute)'}">${d>0?'+':''}${d}%</td></tr>`}).join('');
   const rare=L.tail<.5?`Only about <b>1 in ${bigNum(1/L.tail)}</b> players would pull ${L.big} Legendary-or-better cards in ${L.n} cards.`:`You've pulled ${L.big} Legendary-or-better card${L.big===1?'':'s'} in ${L.n}; about ${(L.n*L.pb).toFixed(1)} is normal.`;
   setH(b,`<h2>Your luck</h2><p style="font:44px/1 'Lilita One',sans-serif;margin:6px 0 10px">${Math.round(L.pct)}% <small style="font:16px Rubik,sans-serif;color:var(--mute)">of normal · ${verdict}</small></p><p>${rare}</p><table class="stack"><thead><tr><th>Rarity</th><th class="n">You got</th><th class="n">Normal</th><th class="n">Difference</th></tr></thead><tbody>${rows}</tbody></table><p class="note">Luck compares your Legendary, Mythic, APEX, IME and Honorable Mention pulls with the normal number for ${L.n} cards. It counts every card you've pulled from packs on this server.</p>`)}
-function renderHome(){$('#hp').textContent=S.packs;$('#openBtn').disabled=S.packs<1||busy;$('#ndBtn').textContent=`Open No-Dupe pack (${S.nd})`;$('#ndBtn').disabled=S.nd<1||busy;
+function renderHome(){$('#hp').textContent=S.packs;$('#openBtn').disabled=S.packs<1||busy;$('#openBtn').textContent=HOLOPK()?'Open Holo pack':'Open pack';$('#openBtn').classList.toggle('holopk',HOLOPK());$('#holoInfo').hidden=!HOLOPK();$('#ndBtn').textContent=`Open No-Dupe pack (${S.nd})`;$('#ndBtn').disabled=S.nd<1||busy;
   setH($('#autoBox'),autoHTML()+(window.dgDesk?'<button class="btn ghost sm" data-act="openMini" title="A small always-on-top window for the corner of your screen">Mini window</button>':''));
   $('#ndInfo').textContent=S.nd?'Only cards you don\'t have yet.':'Only cards you don\'t have yet. Buy them for 300 shards in the Shard shop on Earn packs.';
   const full=S.packs>=CAP||!nextAt,left=Math.max(0,(nextAt||0)-Date.now());$('#hn').innerHTML=full?'<b>Timer full</b>, open some packs':`Next pack in <b>${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,'0')}</b>`;$('#hbar').style.width=(full?100:(1-left/600000)*100)+'%';
@@ -109,7 +109,7 @@ function renderCol(){const u=uniq(),N=LIST.length;$('#colHead').textContent=`${u
   const q=COL.q.toLowerCase(),f=HMS.concat(LIST).filter(c=>{const o=S.cards[c.n]||0;return(COL.r==='all'||c.r==+COL.r)&&(COL.l==='all'||(c.hm?COL.l==='sbe':SEC(c.p)[0]===COL.l))&&(!q||c.n.toLowerCase().includes(q))&&(COL.s==='all'||(COL.s==='own'&&o)||(COL.s==='miss'&&!o)||(COL.s==='holo'&&o===2))});
   $('#grid').innerHTML=f.slice(0,COL.lim).map(c=>{const o=S.cards[c.n]||0,cost=RAR[c.r].cr;return `<div class="cell">${card(c,o===2,!o)}${o?(S.when[c.n]?`<small class="note" style="margin:0">Got ${ft(S.when[c.n])}</small>`:'')+`<button class="mini" data-act="sell" data-n="${esc(c.n)}">Sell</button>`:CUT(c)?'<small class="note" style="margin:0">Removed · can\'t be crafted</small>':`<button class="mini" data-act="craft" data-n="${esc(c.n)}"${S.shards<cost?' disabled':''}>Craft · ${cost} shards</button>`}</div>`}).join('')||'<p class="note">No demons match.</p>';
   $('#moreBtn').hidden=f.length<=COL.lim;
-  $('#hist').innerHTML=S.log.length?S.log.slice(0,30).map(e=>`<div class="q"><div><b>${ft(e.t)} · ${({craft:'Crafted',admin:'Admin',market:'Market',sold:'Sold',nodupe:'No-Dupe pack',trade:'Trade',gift:'Gift'})[e.src]||'Pack'}</b><br><small>${(e.c||[]).map(([n,h,tag])=>esc(n)+(h?' (holo)':'')+' · '+esc(tag)).join('<br>')}</small></div></div>`).join(''):'<p class="note">Packs you open show up here with the time.</p>'}
+  $('#hist').innerHTML=S.log.length?S.log.slice(0,30).map(e=>`<div class="q"><div><b>${ft(e.t)} · ${({craft:'Crafted',admin:'Admin',market:'Market',sold:'Sold',nodupe:'No-Dupe pack',holo:'Holo pack',trade:'Trade',gift:'Gift'})[e.src]||'Pack'}</b><br><small>${(e.c||[]).map(([n,h,tag])=>esc(n)+(h?' (holo)':'')+' · '+esc(tag)).join('<br>')}</small></div></div>`).join(''):'<p class="note">Packs you open show up here with the time.</p>'}
 
 /* leaderboard */
 let LB=null;
@@ -454,11 +454,11 @@ const pipAlive=()=>Date.now()-(+ls('dg-pip-beat')||0)<5000;
 if(MINI){setInterval(()=>ls('dg-pip-beat',String(Date.now())),2000);ls('dg-pip-beat',String(Date.now()));addEventListener('beforeunload',()=>ls('dg-pip-beat','0'))}
 let lastQuick=null,flashT=0;
 /* opens a pack without the case spin or reveal screen: used by the mini window and by auto-open */
-async function quickOpen(nd,auto){nd=!!nd;if(busy||(nd?S.nd:S.packs)<1)return false;busy=true;render();
+async function quickOpen(nd,auto){nd=!!nd;if(busy||(nd?S.nd:S.packs)<1)return false;const hp=!nd&&HOLOPK();busy=true;render();
   let res;try{res=await rpc('dg_open_pack',{p_nodupe:nd})}catch(e){busy=false;toast(errText(e));render();return false}
   const pulls=res.map(p=>({c:BY[p.n]||{n:p.n,p:0,r:0},h:!!p.h,tag:p.tag,nw:!!p.nw,full:!!p.full}));
   const best=pulls.slice().sort((a,b)=>(a.full-b.full)||(RK(b.c)-RK(a.c))||(b.h-a.h)||((a.c.p||0)-(b.c.p||0)))[0];
-  lastQuick={pulls,best,nd,auto:!!auto};
+  lastQuick={pulls,best,nd,hp,auto:!!auto};
   const big=best.c.r>=3&&!best.full,label=(best.h?'Holo ':'')+rarName(best.c);
   if(big&&MINI){flashT=Date.now();const f=$('#mFlash');f.style.setProperty('--rc',RAR[best.c.r].c);f.innerHTML=`<b>${esc(label)} pull!</b><span>${best.c.hm?'':'#'+best.c.p+' '}${esc(best.c.n)}</span>`;f.hidden=false}
   else if(big)toast(`${auto?'Auto-open: ':''}${label} · ${best.c.n}`);
@@ -472,10 +472,10 @@ function renderMini(){if(!MINI||!S)return;
   $('#mPacks').textContent=S.packs;$('#mNd').textContent=S.nd;$('#mShards').textContent=S.shards+' shards';
   $('#mTime').innerHTML=full?'Timer full':`Next pack in <b>${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,'0')}</b>`;
   $('#mBar').style.width=(full?100:(1-left/600000)*100)+'%';
-  $('#mOpen').disabled=S.packs<1||busy;$('#mNdBtn').disabled=S.nd<1||busy;
+  $('#mOpen').disabled=S.packs<1||busy;$('#mOpen').textContent=HOLOPK()?'Holo pack':'Open pack';$('#mOpen').classList.toggle('holopk',HOLOPK());$('#mNdBtn').disabled=S.nd<1||busy;
   setH($('#mAuto'),autoHTML()+(S.auto&&AUTO.on?`<p class="mnote">${S.packs||((AUTO.nd||AUTO.buy)&&S.nd)?'Opening your packs…':AUTO.buy&&S.shards>=300&&!listDone()?'Buying a No-Dupe pack…':AUTO.buy&&listDone()?'Collection complete! Auto-buy is resting.':'Waiting for the next pack'+(AUTO.buy?' or 300 shards.':'.')}</p>`:''));
   if(flashT&&Date.now()-flashT>5000){flashT=0;$('#mFlash').hidden=true}
-  const q=lastQuick;setH($('#mLast'),q?`<p class="mlab">${q.auto?'Auto-opened':'Last'} ${q.nd?'No-Dupe pack':'pack'} · ${q.pulls.filter(p=>p.nw).length} new</p><div class="mgrid">${q.pulls.map(mcard).join('')}</div><p class="mbest" style="color:${RAR[q.best.c.r].c}">${esc((q.best.h?'Holo ':'')+rarName(q.best.c))} · ${esc(q.best.c.n)}</p>`:'<p class="mnote">Open a pack and your cards show up here.</p>');
+  const q=lastQuick;setH($('#mLast'),q?`<p class="mlab">${q.auto?'Auto-opened':'Last'} ${q.nd?'No-Dupe pack':q.hp?'Holo pack':'pack'} · ${q.pulls.filter(p=>p.nw).length} new</p><div class="mgrid">${q.pulls.map(mcard).join('')}</div><p class="mbest" style="color:${RAR[q.best.c.r].c}">${esc((q.best.h?'Holo ':'')+rarName(q.best.c))} · ${esc(q.best.c.n)}</p>`:'<p class="mnote">Open a pack and your cards show up here.</p>');
   const f=(FEED.feed||[]).find(x=>BY[x.n]);setH($('#mFeed'),f?`<span class="mlab">Latest rare pull</span> <b>${esc(f.u)}</b> · <span style="color:${RAR[BY[f.n].r].c}">${BY[f.n].hm?'':'#'+BY[f.n].p+' '}${esc(f.n)}</span> · ${ago(f.t)}`:'')}
 setInterval(()=>{if(MINI&&S){renderMini();if(Date.now()-feedAt>30000)loadFeed()}},1000);
 
@@ -486,6 +486,7 @@ const NOTICES=[{id:'ime-lowered',show:()=>!!S.cards['IT MEANS EVERYTHING']&&(S.w
 /* ---------- announcements: the owner posts, everyone gets a pop-up once and sees it on Home ---------- */
 let ANN=[],UN=[],annAt=0;
 async function loadAnn(){annAt=Date.now();try{const {data}=await SB.from('announcements').select('id,title,body,created_at').order('id',{ascending:false}).limit(5);ANN=data||[]}catch(e){}
+  try{const {data,error}=await SB.from('settings').select('key').eq('key','holo_packs').limit(1);if(!error)HOLO_ON=!!(data&&data.length)}catch(e){}
   try{const {data,error}=await SB.from('user_notices').select('id,title,body,extra,note').order('id');if(!error)UN=data||[]}catch(e){}renderAnn()}
 function renderAnn(){if(!S)return;const box=$('#annBox');box.hidden=!ANN.length;
   setH(box,`<div class="wrap">${ANN.map(a=>`<div class="ann"><p class="ann-t"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 10v4h3l6 4V6L6 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" fill="currentColor"/></svg><b>${esc(a.title)}</b><small>${ago(Date.parse(a.created_at))}</small></p>${a.body?`<p class="ann-b">${esc(a.body)}</p>`:''}</div>`).join('')}</div>`);

@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<meta name="dg-version" content="983cf8816fee">
+<meta name="dg-version" content="2cc267a3ea05">
 <title>Demon Gacha</title>
 <style>
 @font-face{font-family:"Lilita One";src:url(fonts/lilita-one-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -227,6 +227,11 @@ tr.me td{background:#24380f}
 .pullb.imb .pb-in h1{background:linear-gradient(90deg,#fff3c4,#ffd76a,#e0a100,#ffd76a,#fff3c4);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px #ffd76a) drop-shadow(0 4px 0 #000);animation:apexslide 2.5s linear infinite}
 .fd>i.im{background:conic-gradient(#fff3c4,#ffd76a,#e0a100,#fff3c4);box-shadow:0 0 10px #ffd76a}
 @media(prefers-reduced-motion:reduce){.card.ime,.card.ime::before,.pullb.imb .pb-in h1{animation:none}}
+/* Holo packs: once you own every demon, normal packs open as Holo packs */
+.btn.holopk{background:linear-gradient(115deg,#ff5f6d,#ffc371,#8cff3a,#3df2ff,#b45cff,#ff4fd8);background-size:220% 100%;animation:holopk 4s linear infinite;color:#1a0710;box-shadow:0 6px 0 #5b2a63}
+@keyframes holopk{to{background-position:220% 0}}
+.holonote{margin:10px 0 0}.holonote b{background:linear-gradient(90deg,#ff5f6d,#ffc371,#8cff3a,#3df2ff,#b45cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+@media(prefers-reduced-motion:reduce){.btn.holopk{animation:none}}
 /* one-time notices */
 .notice{position:fixed;inset:0;z-index:85;display:grid;place-items:center;padding:20px;background:#000b}
 .notice[hidden]{display:none}
@@ -367,6 +372,7 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
       <p>One pack every 10 minutes, up to 10 stored. Packs you earn from quests, streaks and games stack past the cap.</p>
       <div class="bar"><i id="hbar"></i></div>
       <div class="row"><button class="btn hot" data-act="open" id="openBtn">Open pack</button><span class="timer" id="hn"></span></div>
+      <p class="note holonote" id="holoInfo" hidden>You own every demon, so your packs are <b>Holo packs</b> now: 5 holos you don't have yet in every pack.</p>
       <div class="row" style="margin-top:10px"><button class="btn nd" data-act="openNd" id="ndBtn">Open No-Dupe pack (0)</button><span class="note" id="ndInfo" style="margin:0"></span></div>
       <div class="row" id="autoBox" style="margin-top:10px"></div>
       <div class="row" style="margin-top:12px"><label class="chk"><input type="checkbox" id="spinToggle"> Case-opening spin</label><label class="chk"><input type="checkbox" id="sndToggle"> Sound</label><span class="note" style="margin:0"><span class="tip-mouse">Double-click</span><span class="tip-touch">Double-tap</span> any card to inspect it.</span></div>
@@ -595,8 +601,8 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
 <div id="toasts" aria-live="polite"></div>
 
 
-<script src="config.js?v=983cf8816fee"></script>
-<script src="vendor/supabase.js?v=983cf8816fee"></script>
-<script src="game.js?v=983cf8816fee"></script>
+<script src="config.js?v=2cc267a3ea05"></script>
+<script src="vendor/supabase.js?v=2cc267a3ea05"></script>
+<script src="game.js?v=2cc267a3ea05"></script>
 </body>
 </html>
