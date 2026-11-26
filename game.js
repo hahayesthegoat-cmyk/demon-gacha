@@ -298,11 +298,22 @@ function renderInv(){const box=$('#invBox');box.hidden=!S.owner;if(!S.owner)retu
 async function invEdit(n,holo,remove,okText){const id=INV.id;if(!id)return;
   try{await rpc('dg_owner_card',{p_user:id,p_name:n,p_holo:holo,p_remove:remove});$('#invMsg').textContent=okText;await loadInv();loadPlayers();if(id===ME.id)refresh().catch(()=>{})}catch(e){$('#invMsg').textContent=errText(e)}}
 /* card list sync with AREDL: runs every hour on the server; this shows the last result */
-const syncText=v=>{if(!v)return 'Not synced yet. The first automatic check runs at the top of the next hour.';
+const syncLines=v=>{const out=[],pl=v.placed||[],mv=v.moves||[];
+  if(pl.length)out.push('Placed: '+pl.map(([n,p])=>`${n} at #${p}`).join(', '));
+  else if(v.added&&v.added.length)out.push('Added: '+v.added.join(', '));
+  if(mv.length)out.push('Moved: '+mv.slice(0,8).map(([n,a,b])=>`${n} #${a} → #${b} (${b<a?'up':'down'} ${Math.abs(a-b)})`).join(', ')+(mv.length>8?` and ${mv.length-8} more`:''));
+  if(v.removed&&v.removed.length)out.push('Left the list: '+v.removed.join(', '));
+  if(v.back&&v.back.length)out.push('Back on the list: '+v.back.join(', '));
+  if(v.renamed&&v.renamed.length)out.push('Renamed: '+v.renamed.join(', '));
+  if(v.pushed==null){if(v.moved)out.push(`${v.moved} changed position`)}   /* from before the server listed moves */
+  else if(v.pushed)out.push(`${v.pushed} other level${v.pushed===1?' was':'s were'} pushed along a spot or more by those changes`);
+  return out};
+const syncText=(v,last)=>{if(!v)return 'Not synced yet. The first automatic check runs at the top of the next hour.';
   if(v.err)return `Last check ${v.t?ago(v.t):''}: ${v.err}`;
-  const ch=[v.added&&v.added.length?`added ${v.added.join(', ')}`:'',v.removed&&v.removed.length?`removed ${v.removed.join(', ')}`:'',v.back&&v.back.length?`back on the list: ${v.back.join(', ')}`:'',v.renamed&&v.renamed.length?`renamed: ${v.renamed.join(', ')}`:'',v.moved?`${v.moved} moved`:''].filter(Boolean);
-  return `Last synced ${v.t?ago(v.t):''} · ${v.n} demons on AREDL · ${ch.length?ch.join(' · '):'no changes'}`};
-async function loadSync(){try{const {data}=await SB.from('settings').select('value').eq('key','aredl_sync').limit(1);$('#syncInfo').textContent=syncText(data&&data[0]&&data[0].value)}catch(e){$('#syncInfo').textContent='Could not load the sync status.'}}
+  const now=syncLines(v),head=`Last synced ${v.t?ago(v.t):''} · ${v.n} demons on AREDL`;
+  if(now.length)return head+'\n'+now.join('\n');
+  return head+' · no changes this time'+(last&&last.t&&last.t!==v.t&&syncLines(last).length?`\nLast change, ${ago(last.t)}:\n`+syncLines(last).join('\n'):'')};
+async function loadSync(){try{const {data}=await SB.from('settings').select('key,value').in('key',['aredl_sync','aredl_change']);const g=k=>((data||[]).find(r=>r.key===k)||{}).value;$('#syncInfo').textContent=syncText(g('aredl_sync'),g('aredl_change'))}catch(e){$('#syncInfo').textContent='Could not load the sync status.'}}
 async function loadCodes(){let L;try{L=await rpc('dg_admin_codes')||[]}catch(e){$('#cList').innerHTML='<p class="note">Could not load codes right now.</p>';return}
   $('#cList').innerHTML=L.map(c=>{const gift=[c.packs?`${c.packs} pack${c.packs>1?'s':''}`:'',c.shards?`${c.shards} shards`:''].filter(Boolean).join(' + '),old=c.exp&&c.exp<Date.now(),full=c.max!=null&&c.uses>=c.max;
     return `<div class="q"><div><b class="code">${esc(c.code)}</b>${old?' <span class="hb off">Expired</span>':full?' <span class="hb off">Used up</span>':''}<br><small>${gift} · used ${c.uses}${c.max!=null?' / '+c.max:''} time${(c.max!=null?c.max:c.uses)===1?'':'s'} · ${c.exp?(old?'expired ':'expires ')+ft(c.exp):'never expires'}</small></div><div class="row" style="flex-wrap:nowrap"><button class="mini" data-act="aCopy" data-c="${esc(c.code)}">Copy</button><button class="mini" data-act="aDelCode" data-c="${esc(c.code)}">Delete</button></div></div>`}).join('')||'<p class="note">No codes yet.</p>'}
