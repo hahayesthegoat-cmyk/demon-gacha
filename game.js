@@ -16,7 +16,7 @@ const ft=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'num
 new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true});
 
 /* ---------- connection ---------- */
-let SB=null,ME=null,S=null,nextAt=null,LIST=[],HMS=[],BY={},TIER=[[],[],[],[],[],[],[],[]],OWNER_ID=null,cur='home',busy=false,HOLO_ON=false;
+let SB=null,ME=null,S=null,nextAt=null,LIST=[],HMS=[],BY={},TIER=[[],[],[],[],[],[],[],[]],OWNER_ID=null,cur='home',busy=false,HOLO_ON=false,TGEV=null;
 function readCfg(){const c=window.DG_CONFIG||{};let url=c.url||'',key=c.anonKey||'';if(!url||!key){try{const o=JSON.parse(localStorage.getItem('dg-cfg')||'null');if(o){url=o.url;key=o.key}}catch(e){}}return{url,key}}
 function gate(id){['boot','setup','login'].forEach(g=>{$('#'+g).hidden=g!==id})}
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;$('#toasts').append(t);setTimeout(()=>t.remove(),3400)}
@@ -39,7 +39,7 @@ const uniq=()=>LIST.reduce((a,c)=>a+(S.cards[c.n]?1:0),0),HOLOPK=()=>HOLO_ON&&LI
 
 /* ---------- state from the server ---------- */
 let defsAt=0;
-function applyState(st){const paidBefore=S&&S.invites?S.invites.filter(f=>f.paid).length:null,tinBefore=S?S.tin:null;ME=st.me;S={packs:ME.packs,shards:ME.shards,opened:ME.opened,streak:ME.streak,last:ME.last_login,day:st.today,daily:{run:ME.daily_run,hl:ME.daily_hl},quests:ME.quests||[],ms:ME.ms||{},got:ME.got||{},best:{run:ME.best_run||0,hl:ME.best_hl||0},att:ME.attempts||0,name:ME.username,cards:st.cards||{},when:st.when||{},log:st.log||[],pulls:ME.pulls||{},nd:ME.nd_packs||0,auto:!!ME.auto_open,invite:ME.invite_code||'',invites:st.invites||[],invitedBy:st.invited_by||null,tin:+st.trades_in||0,owner:!!ME.is_owner,admin:!!(ME.is_owner||ME.is_admin),needs:!!ME.needs_name};
+function applyState(st){const paidBefore=S&&S.invites?S.invites.filter(f=>f.paid).length:null,tinBefore=S?S.tin:null;ME=st.me;S={packs:ME.packs,shards:ME.shards,opened:ME.opened,streak:ME.streak,last:ME.last_login,day:st.today,daily:{run:ME.daily_run,hl:ME.daily_hl},quests:ME.quests||[],ms:ME.ms||{},got:ME.got||{},best:{run:ME.best_run||0,hl:ME.best_hl||0},att:ME.attempts||0,name:ME.username,cards:st.cards||{},when:st.when||{},log:st.log||[],pulls:ME.pulls||{},nd:ME.nd_packs||0,tg:ME.tg_packs||0,tgDay:ME.tg_day||null,auto:!!ME.auto_open,invite:ME.invite_code||'',invites:st.invites||[],invitedBy:st.invited_by||null,tin:+st.trades_in||0,owner:!!ME.is_owner,admin:!!(ME.is_owner||ME.is_admin),needs:!!ME.needs_name};
   nextAt=st.next_pack_ms==null?null:Date.now()+Number(st.next_pack_ms);
   if(LIST.length&&(Date.now()-defsAt>30*60*1000||Object.keys(S.cards).some(n=>!BY[n]))){defsAt=Date.now();loadDefs().then(()=>{if(S)render()}).catch(()=>{})}
   if(tinBefore!=null&&S.tin>tinBefore){toast('New trade offer! Open the Trades tab to answer it.');if(cur==='trades')loadTrades()}
@@ -89,7 +89,13 @@ function renderLuck(){const b=$('#luckBox'),L=luckOf(S.pulls);if(!L||L.n<5){setH
     return `<tr><td>${t}</td><td class="n">${got}</td><td class="n">${e<10?e.toFixed(1):Math.round(e)}</td><td class="n" style="color:${got>=e?'var(--lime)':'var(--mute)'}">${d>0?'+':''}${d}%</td></tr>`}).join('');
   const rare=L.tail<.5?`Only about <b>1 in ${bigNum(1/L.tail)}</b> players would pull ${L.big} Legendary-or-better cards in ${L.n} cards.`:`You've pulled ${L.big} Legendary-or-better card${L.big===1?'':'s'} in ${L.n}; about ${(L.n*L.pb).toFixed(1)} is normal.`;
   setH(b,`<h2>Your luck</h2><p style="font:44px/1 'Lilita One',sans-serif;margin:6px 0 10px">${Math.round(L.pct)}% <small style="font:16px Rubik,sans-serif;color:var(--mute)">of normal · ${verdict}</small></p><p>${rare}</p><table class="stack"><thead><tr><th>Rarity</th><th class="n">You got</th><th class="n">Normal</th><th class="n">Difference</th></tr></thead><tbody>${rows}</tbody></table><p class="note">Luck compares your Legendary, Mythic, APEX, IME and Honorable Mention pulls with the normal number for ${L.n} cards. It counts every card you've pulled from packs on this server.</p>`)}
-function renderHome(){$('#hp').textContent=S.packs;$('#openBtn').disabled=S.packs<1||busy;$('#openBtn').textContent=HOLOPK()?'Open Holo pack':'Open pack';$('#openBtn').classList.toggle('holopk',HOLOPK());$('#holoInfo').hidden=!HOLOPK();$('#ndBtn').textContent=`Open No-Dupe pack (${S.nd})`;$('#ndBtn').disabled=S.nd<1||busy;
+/* Thanksgiving event: one free Thanksgiving pack a day while it runs, with much better luck */
+function renderTg(){const b=$('#tgBox');if(!b||!S)return;const on=!!(TGEV&&S.day&&S.day>=TGEV.from&&S.day<=TGEV.to);
+  b.hidden=!on&&!S.tg;if(b.hidden)return;const got=S.tgDay===S.day,last=on&&TGEV.to===S.day;
+  setH(b,`<div class="wrap tgin"><div><p class="lbl">${on?'Thanksgiving event':'Thanksgiving packs'}</p><h2>Thanksgiving packs</h2>
+    <p>Much better luck: Mythic 5%, Legendary 15%, APEX 1 in 200, Honorable Mention 2%, holo 10%.${on?` One free pack every day${last?', and today is the last day!':' until Sunday.'}`:' The event is over, but your packs stay.'}</p></div>
+    <div class="row">${on?`<button class="btn tg" data-act="tgClaim"${got||busy?' disabled':''}>${got?'Claimed today ✓':'Claim today\'s free pack'}</button>`:''}<button class="btn hot tgopen" data-act="openTg" id="tgOpen"${S.tg<1||busy?' disabled':''}>Open Thanksgiving pack (${S.tg})</button></div></div>`)}
+function renderHome(){renderTg();$('#hp').textContent=S.packs;$('#openBtn').disabled=S.packs<1||busy;$('#openBtn').textContent=HOLOPK()?'Open Holo pack':'Open pack';$('#openBtn').classList.toggle('holopk',HOLOPK());$('#holoInfo').hidden=!HOLOPK();$('#ndBtn').textContent=`Open No-Dupe pack (${S.nd})`;$('#ndBtn').disabled=S.nd<1||busy;
   setH($('#autoBox'),autoHTML()+(window.dgDesk?'<button class="btn ghost sm" data-act="openMini" title="A small always-on-top window for the corner of your screen">Mini window</button>':''));
   $('#ndInfo').textContent=S.nd?'Only cards you don\'t have yet.':'Only cards you don\'t have yet. Buy them for 300 shards in the Shard shop on Earn packs.';
   const full=S.packs>=CAP||!nextAt,left=Math.max(0,(nextAt||0)-Date.now());$('#hn').innerHTML=full?'<b>Timer full</b>, open some packs':`Next pack in <b>${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,'0')}</b>`;$('#hbar').style.width=(full?100:(1-left/600000)*100)+'%';
@@ -109,7 +115,7 @@ function renderCol(){const u=uniq(),N=LIST.length;$('#colHead').textContent=`${u
   const q=COL.q.toLowerCase(),f=HMS.concat(LIST).filter(c=>{const o=S.cards[c.n]||0;return(COL.r==='all'||c.r==+COL.r)&&(COL.l==='all'||(c.hm?COL.l==='sbe':SEC(c.p)[0]===COL.l))&&(!q||c.n.toLowerCase().includes(q))&&(COL.s==='all'||(COL.s==='own'&&o)||(COL.s==='miss'&&!o)||(COL.s==='holo'&&o===2))});
   $('#grid').innerHTML=f.slice(0,COL.lim).map(c=>{const o=S.cards[c.n]||0,cost=RAR[c.r].cr;return `<div class="cell">${card(c,o===2,!o)}${o?(S.when[c.n]?`<small class="note" style="margin:0">Got ${ft(S.when[c.n])}</small>`:'')+`<button class="mini" data-act="sell" data-n="${esc(c.n)}">Sell</button>`:CUT(c)?'<small class="note" style="margin:0">Removed · can\'t be crafted</small>':`<button class="mini" data-act="craft" data-n="${esc(c.n)}"${S.shards<cost?' disabled':''}>Craft · ${cost} shards</button>`}</div>`}).join('')||'<p class="note">No demons match.</p>';
   $('#moreBtn').hidden=f.length<=COL.lim;
-  $('#hist').innerHTML=S.log.length?S.log.slice(0,30).map(e=>`<div class="q"><div><b>${ft(e.t)} · ${({craft:'Crafted',admin:'Admin',market:'Market',sold:'Sold',nodupe:'No-Dupe pack',holo:'Holo pack',trade:'Trade',gift:'Gift'})[e.src]||'Pack'}</b><br><small>${(e.c||[]).map(([n,h,tag])=>esc(n)+(h?' (holo)':'')+' · '+esc(tag)).join('<br>')}</small></div></div>`).join(''):'<p class="note">Packs you open show up here with the time.</p>'}
+  $('#hist').innerHTML=S.log.length?S.log.slice(0,30).map(e=>`<div class="q"><div><b>${ft(e.t)} · ${({craft:'Crafted',admin:'Admin',market:'Market',sold:'Sold',nodupe:'No-Dupe pack',holo:'Holo pack',tg:'Thanksgiving pack',trade:'Trade',gift:'Gift'})[e.src]||'Pack'}</b><br><small>${(e.c||[]).map(([n,h,tag])=>esc(n)+(h?' (holo)':'')+' · '+esc(tag)).join('<br>')}</small></div></div>`).join(''):'<p class="note">Packs you open show up here with the time.</p>'}
 
 /* leaderboard */
 let LB=null;
@@ -122,13 +128,14 @@ function render(){if(!S)return;renderMini();$('#tBadge').hidden=!S.tin;$('#tBadg
 function renderAcct(){const b=$('#acct');b.hidden=false;b.textContent=S.name;if(S.owner)b.insertAdjacentHTML('beforeend',OTAG);b.className='mini me'}
 
 /* ---------- packs ---------- */
-let lastPulls=[],lastNd=false;
-async function openPack(nd){nd=!!nd;if(busy||(nd?S.nd:S.packs)<1)return;lastNd=nd;busy=true;$('#openBtn').disabled=true;$('#ndBtn').disabled=true;$('#againBtn').disabled=true;
-  let res;try{res=await rpc('dg_open_pack',{p_nodupe:nd})}catch(e){busy=false;toast(errText(e));render();return}
+let lastPulls=[],lastNd=false,lastTg=false;
+const left=(nd,tg)=>tg?S.tg:nd?S.nd:S.packs;
+async function openPack(nd,tg){nd=!!nd;tg=!!tg;if(busy||left(nd,tg)<1)return;lastNd=nd;lastTg=tg;busy=true;$('#openBtn').disabled=true;$('#ndBtn').disabled=true;$('#tgOpen')&&($('#tgOpen').disabled=true);$('#againBtn').disabled=true;
+  let res;try{res=await rpc('dg_open_pack',tg?{p_nodupe:false,p_tg:true}:{p_nodupe:nd})}catch(e){busy=false;toast(errText(e));render();return}
   const pulls=res.map(p=>({c:BY[p.n]||{n:p.n,p:0,r:0},h:!!p.h,tag:p.tag,nw:!!p.nw,full:!!p.full}));lastPulls=pulls;
   $('#rgrid').innerHTML=pulls.map(p=>`<div class="fc" data-act="flip" style="--rc:${RAR[p.c.r].c}" role="button" tabindex="0" aria-label="Flip card"><div class="fc-in"><div class="back${p.c.r>=2?' glow':''}"><img src="face.png" alt=""></div><div class="front">${card(p.c,p.h)}</div></div><span class="tag${p.nw?' new':''}">${esc(p.tag)}</span></div>`).join('');
   $$('#rgrid .tag').forEach(t=>t.style.visibility='hidden');
-  refresh().catch(()=>{}).finally(()=>{busy=false;$('#againBtn').disabled=(lastNd?S.nd:S.packs)<1;if(pulls.some(p=>p.c.r>=3))loadFeed()});
+  refresh().catch(()=>{}).finally(()=>{busy=false;$('#againBtn').disabled=left(lastNd,lastTg)<1;if(pulls.some(p=>p.c.r>=3))loadFeed()});
   const best=pulls.slice().sort((a,b)=>(a.full-b.full)||(RK(b.c)-RK(a.c))||(b.h-a.h)||((a.c.p||0)-(b.c.p||0)))[0];
   const reveal=()=>{$('#rev').hidden=false;const i=pulls.indexOf(best),el=$$('#rgrid .fc')[i];if(el)flip(el)};
   if(spinOn()){$('#rev').hidden=true;runSpin(best,()=>showBanner(best,reveal))}else if(best.c.r>=3){$('#rev').hidden=true;showBanner(best,reveal)}else $('#rev').hidden=false}
@@ -356,7 +363,7 @@ const ADMIN={
 
 /* ---------- clicks ---------- */
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
-  if(a==='open')openPack(false);else if(a==='again')openPack(lastNd);else if(a==='openNd')openPack(true);else if(a==='flip')flip(b);else if(a==='revall')$$('#rgrid .fc').forEach(flip);else if(a==='close')$('#rev').hidden=true;
+  if(a==='open')openPack(false);else if(a==='again')openPack(lastNd,lastTg);else if(a==='openTg')openPack(false,true);else if(a==='tgClaim')act('dg_claim_tg',{},()=>toast('+1 Thanksgiving pack!'));else if(a==='openNd')openPack(true);else if(a==='flip')flip(b);else if(a==='revall')$$('#rgrid .fc').forEach(flip);else if(a==='close')$('#rev').hidden=true;
   else if(a==='login')act('dg_claim_login',{},rw=>toast(`+${rw} pack${rw>1?'s':''} · Day ${S.last===dayMinus1(S.day)?S.streak+1:1} streak`));
   else if(a==='quest')act('dg_claim_quest',{i:+b.dataset.i},rw=>toast(`+${rw} pack${rw>1?'s':''} · Quest done`));
   else if(a==='ms')act('dg_claim_ms',{p_id:b.dataset.id},rw=>toast(`+${rw} packs · Milestone`)).then(loadMS);
@@ -486,7 +493,7 @@ const NOTICES=[{id:'ime-lowered',show:()=>!!S.cards['IT MEANS EVERYTHING']&&(S.w
 /* ---------- announcements: the owner posts, everyone gets a pop-up once and sees it on Home ---------- */
 let ANN=[],UN=[],annAt=0;
 async function loadAnn(){annAt=Date.now();try{const {data}=await SB.from('announcements').select('id,title,body,created_at').order('id',{ascending:false}).limit(5);ANN=data||[]}catch(e){}
-  try{const {data,error}=await SB.from('settings').select('key').eq('key','holo_packs').limit(1);if(!error)HOLO_ON=!!(data&&data.length)}catch(e){}
+  try{const {data,error}=await SB.from('settings').select('key,value').in('key',['holo_packs','tg_event']);if(!error){HOLO_ON=(data||[]).some(r=>r.key==='holo_packs');TGEV=((data||[]).find(r=>r.key==='tg_event')||{}).value||null;if(S)renderTg()}}catch(e){}
   try{const {data,error}=await SB.from('user_notices').select('id,title,body,extra,note').order('id');if(!error)UN=data||[]}catch(e){}renderAnn()}
 function renderAnn(){if(!S)return;const box=$('#annBox');box.hidden=!ANN.length;
   setH(box,`<div class="wrap">${ANN.map(a=>`<div class="ann"><p class="ann-t"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 10v4h3l6 4V6L6 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" fill="currentColor"/></svg><b>${esc(a.title)}</b><small>${ago(Date.parse(a.created_at))}</small></p>${a.body?`<p class="ann-b">${esc(a.body)}</p>`:''}</div>`).join('')}</div>`);

@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<meta name="dg-version" content="2cc267a3ea05">
+<meta name="dg-version" content="7576692680b2">
 <title>Demon Gacha</title>
 <style>
 @font-face{font-family:"Lilita One";src:url(fonts/lilita-one-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -232,6 +232,13 @@ tr.me td{background:#24380f}
 @keyframes holopk{to{background-position:220% 0}}
 .holonote{margin:10px 0 0}.holonote b{background:linear-gradient(90deg,#ff5f6d,#ffc371,#8cff3a,#3df2ff,#b45cff);-webkit-background-clip:text;background-clip:text;color:transparent}
 @media(prefers-reduced-motion:reduce){.btn.holopk{animation:none}}
+/* Thanksgiving event band */
+.tgband{padding-top:18px;padding-bottom:18px;background:linear-gradient(120deg,#5a1e07,#8a3a0c 45%,#3d1505);border-bottom:1px solid #b5541a}
+.tgin{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between}
+.tgin h2{margin:2px 0 4px;color:#ffd08a}.tgin p{margin:0;max-width:640px}.tgin .lbl{color:#ffb35c}
+.btn.tg{background:linear-gradient(180deg,#ffb347,#e8740c);color:#2a0f02;box-shadow:0 6px 0 #7a3a06}
+.btn.tg:disabled{filter:saturate(.4);opacity:.7}
+.btn.tgopen{background:linear-gradient(180deg,#ff8a3d,#c2410c);box-shadow:0 6px 0 #6b2306}
 /* one-time notices */
 .notice{position:fixed;inset:0;z-index:85;display:grid;place-items:center;padding:20px;background:#000b}
 .notice[hidden]{display:none}
@@ -365,6 +372,7 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
 <main>
 <section id="v-home" class="view">
   <div class="band annband" id="annBox" hidden></div>
+  <div class="band tgband" id="tgBox" hidden></div>
   <div class="hero band"><div class="wrap">
     <div>
       <p class="lbl">Packs ready</p>
@@ -601,8 +609,8 @@ html{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-t
 <div id="toasts" aria-live="polite"></div>
 
 
-<script src="config.js?v=2cc267a3ea05"></script>
-<script src="vendor/supabase.js?v=2cc267a3ea05"></script>
-<script src="game.js?v=2cc267a3ea05"></script>
+<script src="config.js?v=7576692680b2"></script>
+<script src="vendor/supabase.js?v=7576692680b2"></script>
+<script src="game.js?v=7576692680b2"></script>
 </body>
 </html>
